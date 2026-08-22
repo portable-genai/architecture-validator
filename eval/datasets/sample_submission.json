@@ -1,0 +1,13 @@
+{
+  "id": "proj-sample-001",
+  "name": "Customer-facing GenAI onboarding bot on public cloud",
+  "description": "A customer-facing GenAI assistant processing customer onboarding data, fine-tuned on historical chats, deployed in us-central1.",
+  "requirements": "Handle KYC onboarding chats; fine-tune on past customer conversations; ship fast to production.",
+  "declared_region": "us-central1",
+  "declared_controls": ["audit_logging"],
+  "uses_pii": true,
+  "uses_rag": false,
+  "uses_fine_tuning": true,
+  "has_exit_plan": false,
+  "attributes": {}
+}

@@ -1,0 +1,14 @@
+# A4 / P-08 promotion rubric: principle accuracy.
+#
+# Did the validator flag the right principles as PASS vs FAIL? Scored per example as the
+# fraction of the 12 principles whose PASS/FAIL verdict matches the golden expectation,
+# averaged across the golden set. This is the core correctness bar for a policy-as-code
+# intake gate: a wrong verdict either lets a non-compliant project through or blocks a
+# compliant one.
+metric: principle_accuracy
+threshold: 0.90
+direction: maximize
+description: >
+  Fraction of principles whose PASS/FAIL verdict matches the golden expectation, averaged
+  over the golden submission set. Must be at least 0.90 to promote.
+gold: eval/datasets/golden_submissions.jsonl

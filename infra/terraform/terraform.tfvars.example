@@ -1,0 +1,36 @@
+# Copy to terraform.tfvars and fill in. Only these per-tenant values are variables;
+# everything else (region, service names, locations) is concrete in the .tf files.
+
+# Required: the single-tenant, Singapore-resident project.
+project_id = "your-gcp-project"
+
+# Required for Org Policy and Access Context Manager.
+org_id = "123456789012"
+
+# Optional: billing account for Assured Workloads / FinOps tagging.
+billing_account = ""
+
+# Required when enable_vpc_sc = true: existing Access Context Manager policy id (numeric).
+access_policy_id = ""
+
+# Toggle the VPC Service Controls perimeter (P-01/P-03). Keep true for prod.
+enable_vpc_sc = true
+
+# Region is pinned to asia-southeast1 and validated; do not override (P-03).
+# region = "asia-southeast1"
+
+# WORM retention (~7 years). The bucket lock is IRREVERSIBLE; confirm before apply.
+# retention_days = 2557
+
+# The OPA policy-service image (rego bundle baked in). Defaults to the in-repo path.
+# opa_image = "asia-southeast1-docker.pkg.dev/your-gcp-project/architecture-validator/opa:latest"
+
+# The in-country locations the gcp.resourceLocations org policy permits (the residency
+# control). Defaults to the Singapore-first posture; keep in lockstep with settings.
+# allowed_locations = [
+#   "in:asia-southeast1-locations",
+#   "in:asia-southeast2-locations",
+# ]
+
+# GitHub "owner/name" the Cloud Build residency-gate trigger watches (empty to skip).
+# github_repo = "acme-bank/infra-singapore"

@@ -1,0 +1,32 @@
+# Citation-accuracy rubric — A4 AI Quality & Model-Risk gate (P-08).
+#
+# "Citation accuracy" measures whether every residency violation the detector emits cites
+# the General Principle it breaches: P-01 (private networking / VPC-SC / no public egress),
+# P-03 (single in-country region), or P-10 (CMEK), plus the in-country regulator. A finding
+# a reviewer / regulator cannot trace to a principle is worthless.
+#
+# Production scorer: the Gen AI evaluation service (GenAiEvalAdapter).
+# Offline/CI scorer: the deterministic check in eval/run_eval.py (every emitted violation
+# carries a P-01/P-03/P-10 citation).
+
+metric: citation_accuracy
+description: >
+  Per-example correctness of the citation set on emitted violations: every violation
+  cites a residency principle (P-01 / P-03 / P-10) and the relevant regulator. Averaged
+  over the dataset.
+threshold: 0.90          # report fails if score < 0.90
+direction: maximize
+applies_to:
+  - ResidencyViolation.citations
+
+criteria:
+  - id: principle_cited
+    description: Every violation cites P-01, P-03 or P-10 as the breached principle.
+    weight: 0.6
+  - id: regulator_cited
+    description: Every violation cites the in-country regulator residency expectation.
+    weight: 0.4
+
+scoring:
+  scale: [0.0, 1.0]
+  pass_if: "score >= threshold"

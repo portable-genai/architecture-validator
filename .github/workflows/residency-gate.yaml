@@ -1,0 +1,70 @@
+name: Residency gate (reusable)
+
+# A reusable workflow that drops the residency scanner into a consuming
+# repo's CI as a residency gate. It produces a Terraform plan JSON and runs the scanner over
+# it; the scan command exits non-zero on a gating violation, FAILING the build so
+# non-compliant infra never reaches apply. This is the residency gate's reason for being.
+#
+# It is a reusable (workflow_call) target, so a consuming pipeline wires the gate in by
+# reference rather than copying it. Use it from an infra repo:
+#   jobs:
+#     residency:
+#       uses: portable-genai/architecture-validator/.github/workflows/residency-gate.yaml@main
+#       with:
+#         working-directory: ./infra
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: "Directory containing the Terraform to scan."
+        type: string
+        default: "."
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  residency-scan:
+    name: residency scan (FAIL on violation)
+    runs-on: ubuntu-latest
+    env:
+      ARCH_VALIDATOR_PROFILE: onprem
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+        with:
+          terraform_version: "1.9.0"
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install the validator (locked)
+        # Locked, reproducible install: the committed lockfile pins every transitive dep;
+        # install the package itself with --no-deps so the lock stays authoritative. The
+        # package exposes both the architecture-validator and the residency-validator
+        # console scripts.
+        run: pip install -r requirements-dev.lock && pip install -e . --no-deps
+
+      - name: Produce a Terraform plan JSON
+        # In a consuming repo this runs against ${{ inputs.working-directory }}. If a bundled
+        # sample plan is present it is used instead, so the workflow can run self-contained.
+        run: |
+          if [ -f tests/fixtures/sample_plan.json ]; then
+            cp tests/fixtures/sample_plan.json plan.json
+          else
+            terraform -chdir="${{ inputs.working-directory || '.' }}" init -input=false
+            terraform -chdir="${{ inputs.working-directory || '.' }}" plan -out=tfplan
+            terraform -chdir="${{ inputs.working-directory || '.' }}" show -json tfplan > plan.json
+          fi
+
+      - name: Run the residency gate
+        # Non-zero exit fails the gate and blocks non-compliant infra from reaching apply.
+        # No continue-on-error: a gating violation must FAIL the build.
+        run: architecture-validator scan --plan plan.json

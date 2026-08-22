@@ -1,0 +1,121 @@
+# Common-base practices audit
+
+- **Repo:** `architecture-validator`
+- **Catalog id:** Rsk3 (package `architecture_validator`, env prefix `ARCH_VALIDATOR`)
+- **Catalogue reference:** [`common-base-practices.md`](https://github.com/portable-genai/.github/blob/main/common-base-practices.md) (checks A1..G7)
+- **Authoritative source:** reconciled to the maintainer's
+  cross-repository audit matrix,
+  authoritative on portfolio status. This file owns current repository evidence and verdicts.
+- **Note:** Rsk3 is a de-risking toolkit: the policy-as-code intake gate that validates a
+  `ProjectSubmission` against the 12 General Principles (P-01..P-12). It **is** a grounded agent
+  (the LLM drafts injected-requirement prose over KB citations), but the consequential verdicts
+  are a pure deterministic evaluator (`domain/principles_eval.py`) and it processes project
+  metadata / design docs, **not customer PII**. That makes C3 / C4 / E2's PII sub-clause and C2's
+  tenant-isolation N-A by design (confirmed in code, not assumed). Every check below was re-run
+  against the current tree; the offline gate (ruff + format + mypy + 248 tests + eval) is green
+  with no Google Cloud SDK installed.
+
+Applicability: Rsk3 ships a UI (`ui/`) and Terraform (`infra/terraform/`), so `[ui]` and `[infra]`
+checks apply. It owns no login flow (edge IAP verifies the assertion), so C8 is N-A. **Load-bearing**
+checks (a FAIL breaks a shared catalog guarantee) are A1-A6, C1-C5, D1-D3 and E1: C2-C4 are
+N-A-by-design, and every remaining load-bearing check PASSes. There is no load-bearing FAIL and no
+load-bearing PARTIAL (D1/D2 rest on the supply-chain sweep; C5/E1 rest on the shared commons
+adoption; A6 rests on the set-equality drift guard plus `test_behavioral_parity.py`).
+
+| Check | Verdict | Evidence / gap |
+|---|---|---|
+| **A1** Hexagonal core, stdlib-only domain `[all]` **(load-bearing)** | PASS | `grep -rE "google\|fastapi\|httpx\|pydantic\|boto3\|azure" src/architecture_validator/domain/` returns nothing; models are frozen dataclasses. |
+| **A2** Ports are `@runtime_checkable` Protocols, re-exported once `[all]` **(load-bearing)** | PASS | 11 ports across `ports/*.py`, each `@runtime_checkable`; re-exported from `ports/__init__.py`; `test_all_protocols_are_runtime_checkable` asserts it. |
+| **A3** Swappable profiles by one config value `[all]` **(load-bearing)** | PASS | `ARCH_VALIDATOR_PROFILE = local\|gcp\|platform\|onprem`; per-port `adapters:` map in `config/settings.yaml`; 239-test suite runs on `pip install -e ".[dev]"` with `google` module absent. |
+| **A4** One adapter constructor `Adapter(settings)` `[all]` **(load-bearing)** | PASS | `test_adapter_constructs_with_single_settings_arg` parametrises `SDK_FREE_PROFILES` (onprem, local) x every port; green. |
+| **A5** Lazy cloud imports in cloud adapters `[all]` **(load-bearing)** | PASS | `grep -n "^from google\|^import google" src/architecture_validator/adapters/gcp/*.py` and `agent/*.py` return nothing; offline import of all modules proven by the green suite (no `google` installed). |
+| **A6** Contract tests enforce the hexagon; port map cannot drift `[all]` **(load-bearing)** | PASS | `test_port_parity.py` proves structural parity + single-settings-arg + runtime_checkable, and `test_port_protocols_matches_settings_adapters` now asserts SET-EQUALITY between `PORT_PROTOCOLS` and `config/settings.yaml` `adapters:`, so drift in **either** direction fails loudly (a lost binding AND an unregistered/untested one). `test_behavioral_parity.py` proves boundary parity for one canonical request: `local == platform` byte-identically for the real httpx delegates (`audit` Hrz5, `registry` Hrz3), the `control_mapping` (C2) delegate round-trips its wire contract to domain Citations while `local` stays deterministic, `policy_engine` is deterministic across independent evaluators, every `onprem` placeholder fails fast, and the full `ValidationService` pipeline runs under `local` and fails fast under `onprem` on a profile change alone. |
+| **A7** Kernel vs vertical split in the domain `[all]` | PASS | The split is physical and the dependency direction is enforced. `src/architecture_validator/domain/kernel.py` owns the vertical-neutral evidence, audit, evaluation, citation and severity contracts and imports nothing from `architecture_validator`; `domain/models.py` holds only the Rsk3 vertical (`ProjectSubmission`, `Principle`, `ValidationReport`, `PrincipleFinding`, `InjectedRequirement`) and re-exports every kernel name, so no import site changed and forks need no migration. Proved by execution rather than by reading: `tests/unit/test_kernel_boundary.py` runs a fresh `subprocess` interpreter that imports `architecture_validator.domain.kernel` and fails if `architecture_validator.domain.models` ever enters `sys.modules`, plus the reverse arrow and an AST scan for intra-package imports. Verified RED first: against a re-export shim over the pre-split module the file failed 3 of 32; after the split, 32 pass. **The 29 identity assertions all passed against the broken shim and are therefore not the evidence**; only the executed import-direction probes distinguished a real boundary from a decorative one. Ruff and mypy clean over 100 files. |
+| **A8** Consume platform horizontals via thin delegates `[all]` | PASS | `adapters/platform/remote_*.py` (49-103 lines, marshalling only) delegate to Rsk1 (KB `/ask`), Rsk2 (coverage), Rsk4 (residency), Hrz3 (registry), Hrz5 (audit); no rogue second implementation of a horizontal's core. Gap: the eval horizontal (Hrz4) has no `platform` delegate, only a direct gcp integration (cross-ref E1). |
+| **B1** Consequential math is deterministic, pure, replayable `[agentic]` | PASS | `domain/principles_eval.py` produces all 12 PASS/FAIL/NEEDS_INFO verdicts as pure stdlib functions (`test_principles_eval.py`); OPA outage falls back to it; the LLM only drafts NFR prose (`injection_service.py`), never the verdict. |
+| **B2** Every claim carries a citation; empty retrieval never ungrounded `[agentic]` | PASS | Every `PrincipleFinding` always carries a `principle_citation` (CROSS provenance) and every `InjectedRequirement` falls back to `finding.citations` so it is never provenance-less (`_grounded.citations_for_source_ids`). Grounding is ruleset-based, so KB retrieval is supplementary/best-effort by design; the reference "hard error on empty retrieval" clause does not apply (a verdict is always grounded in the principle rule itself). |
+| **B3** Maker-checker on every consequential output `[agentic]` | PASS | The shipped `ReviewPolicy` requires review for every report, including clean high-confidence submissions, and routes them through the existing Hrz7 seam. `PolicySettings` and `ReviewPolicy` both refuse `review_all_reports=false`, so a bank cannot configure away the checker. Tests cover clean/failing reports and the refused override; nothing auto-executes. |
+| **B4** Bank-owned policy numbers in config, defaults = reference `[all]` | PASS | `policy:` owns allowed P-03 regions and high-severity routing alongside OPA wiring; the local/fallback evaluator and managed OPA request consume the same region list. All report review is an immutable floor rather than an adopter-owned relaxation. Strict parsing rejects unknown keys, string booleans, blank/scalar lists, false review-floor values and unknown severities. Tests prove shipped YAML equals `PolicySettings()`, safe region overrides alter behavior, and the OPA payload receives the exact configured list. Residency scan policy and eval thresholds remain separately config-owned. |
+| **B5** Open taxonomy: `StrEnum` vocabularies, engines typed on `str` `[all]` | PASS | The six vocabularies (`Regulator`, `Jurisdiction`, `ThinkingLevel`, `CheckStatus`, `Severity`, `Decision`) are `StrEnum` (via the shared `hex-service-kit` commons): members ARE their wire values. The 12-principle set stays a deliberately closed governance ruleset. |
+| **C1** Identity resolved server-side; client actor/ACL discarded `[all]` **(load-bearing)** | PASS | `api/schemas.py` documents "deliberately no `actor` field"; `api/security.py` resolves a verified `Principal` via the profile's `IdentityPort` on every artifact route (401 on failure); the verified subject is the audit actor. |
+| **C2** Object-level authz; tenant isolation by data tags `[all]` **(load-bearing)** | N-A | N-A by design: the reg-KB is a **shared regulatory corpus** (identical for all tenants, no per-case/tenant documents) and `/validate` is stateless (submission in, report out, no ACL-scoped read-back), so there is no multi-tenant stored evidence to isolate. `local/knowledge.py` has no ACL scoping; the `Principal` still carries `tenant`/`principals` for audit. Confirmed by reading the KB adapters. |
+| **C3** Redact before everything `[agentic]` **(load-bearing)** | N-A | N-A by design: Rsk3 processes project metadata / design docs, not customer PII (stated in `domain/models.py`, `AuditEvent` docstring, COMPLIANCE.md "Honest N/A"). No model/index/registry/audit call ingests PII, so there is no boundary redactor. `rule_p_04` still *checks* that the validated project honours P-04. |
+| **C4** Jurisdiction-driven PII packs keep the gate honest `[agentic]` **(load-bearing)** | N-A | N-A by design: with no PII flow there is no runtime redactor and no `pii_patterns` pack to keep honest. See C3. |
+| **C5** Fail-closed defaults everywhere `[all]` **(load-bearing)** | PASS | `main()` binds via `hex_service_kit.resolve_bind_host` (loopback under the no-auth local profile unless `ARCH_VALIDATOR_ALLOW_INSECURE_DEMO=1`); Makefile `API_HOST ?= 127.0.0.1`; CORS is `cors_allowlist` (explicit `ARCH_VALIDATOR_CORS_ORIGINS`, never `*`; dev-origin fallback ONLY under local). Proven by `tests/unit/test_netdefaults.py`. |
+| **C6** Security-header baseline on every surface `[ui]` | PASS | The UI retains its one-source nonce CSP and built-server hydration assertion. API middleware adds CSP/frame controls, `nosniff` and `Referrer-Policy: no-referrer` on every profile; HSTS is emitted only for explicitly TLS-fronted `gcp` and `platform`. API tests prove its presence on both secure profiles and absence on `local`, `onprem` and unconfigured settings. |
+| **C7** S2S calls authenticated, https-only outside loopback `[all]` | PASS | `adapters/platform/_s2s.py` sources `hex_service_kit.s2s`; all six platform delegates (`remote_audit`, `remote_registry`, `remote_control_mapping`, `remote_residency`, `remote_knowledge`, and the new `remote_evaluation`) validate their base URL at construction and attach the S2S bearer + signed actor; `remote_knowledge` passes the actor as the signed `X-Av-Actor` header pair, not as a spoofable JSON body field. |
+| **C8** Web login flow hardening `[ui]` | N-A | N-A by design: Rsk3 owns no login flow. Authentication is delegated to edge IAP (gcp) / a client IdP placeholder (onprem) / seeded personas (local); there is no `api/auth.py`, no `adapters/oidc/*`. |
+| **C9** Tamper-evident audit with honest limits `[all]` | PASS | `LocalAppendOnlyAuditAdapter` wraps the shared `hex_service_kit.audit.HashChainedAuditLog`: SHA-256 chain over canonical JSON, UPDATE/DELETE rejected by triggers, JSONL export/restore, `verify_chain()` exposed, honest-limits docstring; the in-memory `events` mirror for unit assertions is kept. Proven by `tests/unit/test_audit_chain.py`. Managed profile keeps the locked WORM bucket. |
+| **C10** No secret values in the repo `[all]` | PASS | `config/settings.yaml` stores only `${ENV_VAR:-default}` names (`*_env`-style); literal-secret grep over `config/` is clean. |
+| **D1** Locked, reproducible installs everywhere `[all]` **(load-bearing)** | PASS | Committed `requirements-dev.lock` + `requirements-gcp.lock` (uv pip compile, py3.12), ruff pinned exactly, Dockerfile installs from the lock; the commons packages are pinned by tag, with the exact SHA recorded in both locks. |
+| **D2** Digest-pinned images, SHA-pinned Actions, dependabot, CI audit `[all]` **(load-bearing)** | PASS | Base image digest-pinned, Actions SHA-pinned, `.github/dependabot.yml` present, `pip-audit` a hard CI gate. |
+| **D3** Whole gate runs offline, zero org secrets `[all]` **(load-bearing)** | PASS | `ci.yaml` (`ARCH_VALIDATOR_PROFILE: local`) runs ruff + format + mypy + pytest; `eval-gate.yaml` (`onprem`) runs the eval. No `secrets.` references; all green offline (verified locally: 102 passed, mypy clean, eval PASS). |
+| **D4** Non-root, minimal, healthchecked container `[infra]` | PASS | `Dockerfile`: multi-stage, `USER appuser` (uid 10001), `HEALTHCHECK` on `/healthz`, `EXPOSE 8088`, `ARCH_VALIDATOR_PROFILE=gcp`; the runtime stage has no `build-essential` (builder-only). |
+| **D5** Deploy-time residency/sovereignty, parameterised `[infra]` | PARTIAL | Terraform pins/validates Singapore and includes Org Policy, CMEK, VPC-SC and locked logging. `make tf-validate` performs fmt/init/validate offline and CI invokes it. Remaining proof requires a named GCP project and authorised apply/post-deployment evidence of effective resource location, encryption, perimeter denials and retention; this closure deliberately did not deploy. |
+| **E1** Offline eval smoke guards merge; Hrz4 owns promotion `[agentic]` **(load-bearing)** | PASS | `eval/run_eval.py` has the `--mode smoke|gate` split via the shared `agent-eval-kit` scaffold; the `evaluation` port gained `gate()` across all four families and a `platform` binding (`remote_evaluation.py`, the shared `PromotionGateClient` against Hrz4, registered bundle `rsk3-architecture-validator`, S2S headers attached); gate mode refuses to run outside `ARCH_VALIDATOR_PROFILE=platform|gcp`. `--use-gcp` kept as an alias. |
+| **E2** Safety metric with strictest threshold, no false green `[agentic]` | PASS | `safety >= 0.99` is the strictest threshold and is structurally unable to go falsely green: a golden project expected to FAIL that is reported `passed` scores 0 (`score_safety`). The reference's "PII detector shared with the runtime redactor" sub-clause is N-A (no PII); the safety semantics here are "never pass a failing project". |
+| **E3** Fixtures and golden data obviously fictional `[all]` | PASS | `golden_submissions.jsonl` and `tests/fixtures/sample_projects.py` use synthetic scenario names ("Ungated chat agent", "Locked-in vendor agent") and both state "The text is fictional"; the LICENSE/README carry the not-real-instruments warning. |
+| **F1** Demo is code, offline, one command, presenter-paced `[all]` | PASS | `make demo` runs `scripts/arch_demo.py` + `render_arch_ui.py` (real `ValidationService`, local profile, no cloud/API key); `make demo-server` serves a live click-through on `:8092`. |
+| **F2** Demo cannot rot silently `[all]` | PASS | `scripts/demo_selftest.py` runs two stages over one real local-profile run, invoked by `make demo-selftest`, aggregate `make check` and CI. **Rendered stage:** pages are addressed through the stable `data-*` hooks `scripts/render_arch_ui.py` publishes, and every figure a page states is recomputed from the report and compared: principles checked, FAIL count, injected count, per-panel counts, and the identity and order of every finding and injected requirement. It also pins gate invariants (a verdict passes only when nothing failed; an injected requirement only ever answers an unsatisfied principle; a clean submission injects nothing). **Responsiveness probe:** a deliberately mutated report is re-rendered and the page is required to move with it. This exists because cross-checking alone cannot catch a constant that currently equals the truth: a literal `12` for the principle count passed every comparison until this probe was added, and now fails immediately. **Served stage:** the real presenter server is booted on an ephemeral port and walked end to end over HTTP, asserting the `data-demo='presenter-step'` bar advances through every step, that `/state` agrees with the page, that each validated step renders the real case page whose served verdict matches the offline report, that the intro step shows no verdict, that advancing past the end is a no-op, and that restart clears the verdicts. The served console carries **zero `<script>` tags** and navigates by form POST, so an HTTP-level walkthrough is the complete journey for this surface; a browser engine would add a heavyweight optional dependency without adding coverage, so `tests/browser/`, a `[demo]` extra and a `demo-browser` target were deliberately not built. The separate Next.js console keeps its own hydration gate under `make ui-check`. Verified able to fail before being trusted: a hard-coded principle figure failed the responsiveness probe, a stripped `data-panel` hook failed with `expected exactly one [data-panel=principle-findings], found 0`, and a stripped `data-demo` hook failed the served stage independently. Substring checks alone (that `synthetic` and `<section` appear somewhere in each page, or a hard-coded `12`) would pass against a page whose panels have lost every finding, so the self-test does not rely on them. |
+| **F3** Portability claim is executable `[all]` | PASS | `scripts/portability_demo.py` runs the complete offline suite/port contracts and scans the domain AST for cloud imports, exiting nonzero on drift and naming the managed qualities it cannot prove. `make portability`, aggregate `make check` and CI invoke it. |
+| **G1** Declared doc authority order, kept true `[all]` | PASS | `docs/doc-authority.md` declares SPEC > ARCHITECTURE > COMPLIANCE > README > supporting docs, with changelog/audit roles; root documents link it and static tests pin the order. |
+| **G2** Compliance mapping table + adopter-owned crosswalk `[all]` | PASS | COMPLIANCE retains its P-01..P-12/dependency mappings and adds an explicitly adopter-owned MAS/HKMA/APRA/FSA crosswalk with applicability, exact-clause, approval and retained-evidence responsibility. |
+| **G3** Documented, mechanised fork path `[all]` | PASS | `docs/ADOPTING.md` states the reusable-machinery-vs-vertical boundary, the core-vs-adopter-owned file list, and a human-decisions checklist (principle set, eval golden set, IdP, region); `scripts/rename_fork.py` is the one-pass rebrand of the package (`architecture_validator`), the CLI (`architecture-validator`), the `ARCH_VALIDATOR_` env prefix, and the baked-in resource ids (`architecture-validator`, the `architecture-validator` git / provider id), longest-first ordered. Dry-run verified: exits 0, prints a sensible plan (63 files / 304 replacements + the package-dir rename), writes nothing, working tree stays clean. |
+| **G4** Retired `[all]` | N-A (retired) | Retired practice. Releases are tracked by git tag and the `pyproject.toml` version. |
+| **G5** Role-specific FAQs referencing sibling systems `[all]` | PASS | `docs/faq/` holds a `README.md` index plus five role FAQs (security, portability, features, adoption, compliance); each names the owning sibling catalog id for every adjacent concern (Rsk1 reg-KB, Rsk2 control mapping, Rsk4 residency, Rsk5 exit planner, Hrz3 registry, Hrz4 eval / model-risk, Hrz5 audit, Hrz7 human-review) rather than re-documenting it, and covers the OPA / Rego policy-as-code angle. |
+| **G6** Contribution docs cover full extension touch list `[all]` | PASS | `CONTRIBUTING.md` "Architecture rules" cover adding a port (gcp + onprem binding in settings, extend `tests/contract`) and the one-source-of-truth rule (change `principles_eval.py` AND the rego rule AND a test); enforced by `test_every_port_has_onprem_and_local_bindings`. |
+| **G7** Markdown discipline: minimise em-dashes, validate mermaid `[all]` | PASS | A grep for the em-dash glyph counts **0** across every tracked `.md` (README, SPEC, ARCHITECTURE, COMPLIANCE, DEMO, CONTRIBUTING, docs, infra, scripts); mermaid blocks in README render. |
+
+**Verdict counts:** 35 PASS, 1 PARTIAL, 0 FAIL, 5 N-A (of 41 checks). A7 and F2 both pass on
+RED-first evidence. D1/D2 rest on the supply-chain sweep; B5/C5/C7/C9/E1 rest on the shared
+commons adoption; A6 rests on the set-equality drift guard plus `test_behavioral_parity.py`;
+G3/G5 rest on `docs/ADOPTING.md` + `scripts/rename_fork.py` and `docs/faq/`; G4 is a retired
+practice. No FAIL remains; D5 is the only open PARTIAL, and it is external-evidence only.
+**Load-bearing** (A1-A6, C1-C5, D1-D3, E1): no load-bearing FAIL and no load-bearing PARTIAL.
+
+## Gaps carried to systems/
+
+Recommended `Capability gaps` for the Rsk3 row of
+the maintainer's per-system register, ordered
+load-bearing first. There is no open load-bearing gap; only quality-of-adoption gaps remain open.
+
+- **A7 module boundary.** `domain/kernel.py` physically owns the
+  vertical-neutral contracts and imports nothing from `architecture_validator`; `domain/models.py` keeps
+  the Rsk3 vertical and re-exports every kernel name, so no import site moved.
+  `tests/unit/test_kernel_boundary.py` proves the direction in a fresh interpreter, verified
+  against a re-export shim run RED first.
+- **F2 demo anti-rot.** The self-test consumes `data-*` evidence hooks
+  instead of prose, recomputes every published figure from the report, re-renders a mutated
+  report to prove the figures are not constants, and walks the real presenter server end to end
+  over HTTP. Three planted defects (a hard-coded principle figure, a stripped `data-panel` hook,
+  a stripped `data-demo` hook) each turn it red, proving the self-test can fail before it is
+  trusted. A headless-browser harness is deliberately not built: the served console has no
+  `<script>` tags and navigates by form POST, so a browser engine would add an optional
+  dependency without adding coverage.
+- **D5 external evidence only.** Offline Terraform validation is gated. A named GCP project plus
+  an authorised apply/post-deployment evidence run remains necessary; no deployment occurred here.
+- **Other scoped findings.** B3/B4/C6/F3/G1/G2 and the offline half of D5 are
+  covered by tests and aggregate-gate coverage.
+- **N-A by design (not gaps):** C2 (shared reg corpus, stateless validate), C3 / C4 (no customer
+  PII), C8 (no owned login flow), E2 PII sub-clause.
+
+**Basis for the load-bearing and adoption checks:**
+
+- **D1 dependency locking / D2 supply-chain pinning.** The supply-chain sweep put in place:
+  committed `requirements-dev.lock` + `requirements-gcp.lock`, exact `ruff==` pin, locked installs in
+  CI and the Dockerfile, digest-pinned base image, SHA-pinned Actions, `dependabot.yml`, `pip-audit`
+  hard CI gate.
+- **C5 fail-closed bind / C7 S2S auth / C9 tamper-evident audit / E1 eval promotion authority / B5
+  open taxonomy.** These rest on the shared commons adoption: `hex_service_kit`
+  `resolve_bind_host` + `cors_allowlist` (C5), the shared `_s2s.py` with bearer + signed-actor header
+  and the retired spoofable JSON `actor` (C7), the `HashChainedAuditLog` wrapper (C9), the
+  `agent-eval-kit` `--mode smoke|gate` split plus the `remote_evaluation.py` Hrz4 delegate (E1), and
+  the shared `StrEnum` vocabularies (B5).
+- **A6 contract-test drift guard.** The set-equality
+  `test_port_protocols_matches_settings_adapters` plus `tests/contract/test_behavioral_parity.py`
+  guard against drift.
+- **Mandated docs.** `docs/runbook.md` and `docs/onprem-migration.md` are both
+  present.
+- **G3 / G5 adoption docs.** `docs/ADOPTING.md` + `scripts/rename_fork.py` (fork path + one-pass rebrand,
+  dry-run verified to write nothing) and `docs/faq/` (index + five role FAQs naming the owning
+  sibling catalog id per concern) cover them. G4 is a retired practice.

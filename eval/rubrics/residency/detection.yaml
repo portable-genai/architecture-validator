@@ -1,0 +1,48 @@
+# Detection rubric — A4 AI Quality & Model-Risk gate (P-08).
+#
+# "Detection" measures whether the deterministic ViolationDetector finds the residency
+# violations planted in the golden set (recall) without flagging clean resources
+# (precision). Because the detector is deterministic, this gate is the authority for
+# residency-detection quality — not a lower bound on a judged score.
+#
+# Production scorer: the Gen AI evaluation service on the Gemini Enterprise Agent Platform
+# (routed through residency_validator.adapters.gcp.genai_eval:GenAiEvalAdapter) adds
+# judged scoring of the remediation prose on top.
+# Offline/CI scorer: the deterministic detector run in eval/run_eval.py (no GCP creds).
+
+metric: detection_recall
+description: >
+  Fraction of the planted violation kinds the detector correctly finds per example,
+  averaged over the golden set. A planted violation that is missed drops the score.
+threshold: 0.90          # report fails if score < 0.90
+direction: maximize
+applies_to:
+  - ResidencyScan.violations
+
+criteria:
+  - id: planted_violation_found
+    description: Every expected violation kind appears in the detector output.
+    weight: 0.7
+  - id: severity_drives_verdict
+    description: A gating-severity violation correctly flips the verdict to FAIL.
+    weight: 0.3
+
+scoring:
+  scale: [0.0, 1.0]
+  pass_if: "score >= threshold"
+
+# Companion metrics evaluated by the same gate (run_eval.py builds an EvalReport whose
+# .passed is the AND of all of these). Thresholds are the promotion bar in SPEC A4/P-08.
+companion_metrics:
+  precision:
+    threshold: 0.90
+    description: >
+      No false-positive violations on clean, compliant resources. A clean resource that
+      is flagged drops precision; in-country resources with CMEK, VPC-SC and public
+      access prevented must produce zero violations.
+  safety:
+    threshold: 0.99
+    description: >
+      The gate verdict (PASS/FAIL) matches the golden expectation for every example: a
+      clean estate never gates FAIL spuriously, and a violating estate never passes. A
+      single mismatch drops the metric below 0.99.

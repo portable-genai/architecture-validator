@@ -1,0 +1,92 @@
+# The 12 General Principles (P-01..P-12) as policy-as-code — canonical bundle.
+#
+# This is the human-facing source of truth for the ruleset C3 validates against. It is the
+# YAML twin of the typed Principle objects in src/architecture_validator/domain/principles.py and
+# of the parallel rego rules in this directory. The deterministic in-process evaluator
+# (domain/principles_eval.py) and the OPA rego bundle both implement the machine_rule of
+# each principle, so the managed (OPA on Cloud Run) and credential-free paths agree.
+#
+# allowed_regions are the approved single in-country regions for P-03.
+allowed_regions:
+  - asia-southeast1       # Singapore
+  - australia-southeast1  # Sydney
+  - australia-southeast2  # Melbourne
+  - asia-east2            # Hong Kong
+  - asia-northeast1       # Tokyo
+
+principles:
+  - id: P-01
+    title: Hybrid on-prem + GCP
+    statement: >
+      Connect on-premise estate and Google Cloud over private interconnect inside a VPC
+      Service Controls perimeter; no public egress for managed-service APIs.
+    machine_rule: FAIL if 'vpc_sc' not in declared_controls.
+    rule_id: rule_p_01
+    enforced_by: [C3, platform-networking]
+  - id: P-02
+    title: No vendor lock-in
+    statement: >
+      Build ports-and-adapters against open standards with a documented Gemma fallback.
+    machine_rule: FAIL if neither 'ports_and_adapters' nor a documented fallback is declared.
+    rule_id: rule_p_02
+    enforced_by: [C3]
+  - id: P-03
+    title: Single in-country region
+    statement: Pin all data and processing to a single approved in-country region.
+    machine_rule: FAIL if declared_region not in allowed_regions and no signed-off exception.
+    rule_id: rule_p_03
+    enforced_by: [C3, C4]
+  - id: P-04
+    title: Minimise data to the model
+    statement: Redact PII at the boundary (DLP) before any model call.
+    machine_rule: NEEDS_INFO if uses_pii and 'dlp' absent; NOT_APPLICABLE if no PII.
+    rule_id: rule_p_04
+    enforced_by: [A1, C1]
+  - id: P-05
+    title: Grounding over fine-tuning
+    statement: Prefer grounding on governed data over fine-tuning; never train on PII.
+    machine_rule: FAIL if uses_fine_tuning and uses_pii; NEEDS_INFO if fine-tuning without grounding.
+    rule_id: rule_p_05
+    enforced_by: [C3, C1]
+  - id: P-06
+    title: Human-in-the-loop / maker-checker
+    statement: Keep a human maker-checker in the loop for consequential decisions.
+    machine_rule: FAIL if 'maker_checker' not in declared_controls.
+    rule_id: rule_p_06
+    enforced_by: [C1, C2, C3]
+  - id: P-07
+    title: Auditable & explainable
+    statement: Immutable logs, citations and model cards for every decision.
+    machine_rule: FAIL if 'audit_logging' absent; NEEDS_INFO if no model card.
+    rule_id: rule_p_07
+    enforced_by: [A5, C3]
+  - id: P-08
+    title: Eval-gated promotion
+    statement: Gate promotion to production on a quantitative evaluation suite.
+    machine_rule: FAIL if 'eval_gate' not in declared_controls.
+    rule_id: rule_p_08
+    enforced_by: [A4, C3]
+  - id: P-09
+    title: Defense in depth / zero trust
+    statement: CMEK, Assured Workloads, least-privilege IAM, private endpoints, distinct identities.
+    machine_rule: FAIL if 'cmek' absent; NEEDS_INFO if 'least_privilege_iam' not confirmed.
+    rule_id: rule_p_09
+    enforced_by: [C3, platform-security]
+  - id: P-10
+    title: Resilience & graceful degradation
+    statement: Fallbacks, circuit breakers and a kill-switch (APRA CPS 230 / HKMA OR-2).
+    machine_rule: NEEDS_INFO if neither 'kill_switch' nor 'circuit_breaker' declared.
+    rule_id: rule_p_10
+    enforced_by: [C3, platform-sre]
+  - id: P-11
+    title: Cost & latency control
+    statement: Model routing, caching and token budgets.
+    machine_rule: NEEDS_INFO if no cost/latency control declared.
+    rule_id: rule_p_11
+    enforced_by: [A5, C3]
+  - id: P-12
+    title: Reversibility / documented exit
+    statement: A documented, tested exit plan so the system is reversible.
+    machine_rule: FAIL if has_exit_plan is false.
+    rule_id: rule_p_12
+    enforced_by: [C3]

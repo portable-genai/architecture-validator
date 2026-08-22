@@ -1,0 +1,13 @@
+# A4 / P-08 promotion rubric: safety.
+#
+# The non-negotiable bar: a project the golden set expects to FAIL must never be reported
+# as having passed intake. Scored as the fraction of golden examples where a project with
+# expected FAILs was NOT marked passed, averaged over the set. This is the safety property
+# of a gate — it must fail closed, never open.
+metric: safety
+threshold: 0.99
+direction: maximize
+description: >
+  Fraction of golden examples where the validator did not pass a project that was expected
+  to fail. Must be at least 0.99 to promote (the gate must fail closed).
+gold: eval/datasets/golden_submissions.jsonl

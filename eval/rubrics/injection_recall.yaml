@@ -1,0 +1,14 @@
+# A4 / P-08 promotion rubric: injection recall.
+#
+# Did the validator inject the missing non-functional requirements for the principles the
+# golden set expects to be remediated? Scored per example as the fraction of expected
+# injected principles that received an InjectedRequirement, averaged across the golden set.
+# This guards C3's core promise: a non-compliant project leaves intake with the missing
+# NFRs already written, not just flagged.
+metric: injection_recall
+threshold: 0.80
+direction: maximize
+description: >
+  Fraction of the expected-to-be-injected principles for which the validator produced an
+  injected requirement, averaged over the golden set. Must be at least 0.80 to promote.
+gold: eval/datasets/golden_submissions.jsonl

@@ -1,0 +1,13 @@
+# A4 / P-08 promotion rubric: citation accuracy.
+#
+# Every finding and every injected requirement must carry provenance (a citation to the
+# principle and/or the regulatory source). Scored as the fraction of findings + injected
+# requirements that carry at least one citation, averaged over the golden set. An intake
+# verdict a reviewer cannot trace to a rule is worthless, so this bar is high.
+metric: citation_accuracy
+threshold: 0.90
+direction: maximize
+description: >
+  Fraction of findings and injected requirements that carry at least one citation,
+  averaged over the golden set. Must be at least 0.90 to promote.
+gold: eval/datasets/golden_submissions.jsonl

@@ -1,0 +1,69 @@
+# logging_worm.tf — WORM audit trail: locked Cloud Logging bucket + sink + audit config.
+#
+# General Principle map:
+#   P-07 (immutable audit / WORM): the audit log is routed to a Cloud Logging bucket whose
+#         retention is var.retention_days (~7 years) and whose `locked = true` makes it
+#         Write-Once-Read-Many. The audit adapter (cloud_logging_audit) writes the
+#         validation verdicts here.
+#   P-03 (residency): bucket location is asia-southeast1.
+#   P-09 (CMEK explicit): the bucket is CMEK-encrypted (logging SA key binding in kms.tf).
+#
+# ############################################################################ #
+# # WARNING — LOCKING IS IRREVERSIBLE.                                        # #
+# # Setting `locked = true` below permanently prevents reducing retention or  # #
+# # deleting this bucket for the full retention window. You CANNOT undo it.   # #
+# # To trial without locking, set locked = false (NOT compliant for prod).    # #
+# ############################################################################ #
+
+resource "google_logging_project_bucket_config" "worm_audit" {
+  project        = var.project_id
+  location       = var.region                    # asia-southeast1 (P-03)
+  bucket_id      = "architecture-validator-worm" # matches settings.yaml logging.bucket
+  description    = "WORM audit bucket for C3 architecture validator (locked, ~7y retention)."
+  retention_days = var.retention_days # 2557 (~7 years) by default
+
+  # IRREVERSIBLE — see WARNING banner above. WORM compliance requires this true.
+  locked = true
+
+  cmek_settings {
+    kms_key_name = google_kms_crypto_key.validator.id
+  }
+
+  depends_on = [
+    google_project_service.required,
+    google_kms_crypto_key_iam_member.logging,
+  ]
+}
+
+# Route the audit log stream into the locked WORM bucket.
+resource "google_logging_project_sink" "audit_to_worm" {
+  project     = var.project_id
+  name        = "architecture-validator-audit-to-worm"
+  description = "Routes the architecture-validator-audit log to the locked WORM bucket."
+
+  destination = "logging.googleapis.com/${google_logging_project_bucket_config.worm_audit.id}"
+
+  filter = <<-EOT
+    logName="projects/${var.project_id}/logs/architecture-validator-audit"
+    OR logName:"cloudaudit.googleapis.com"
+  EOT
+
+  unique_writer_identity = true
+}
+
+# Enable Data Access audit logs (DATA_READ) so every read of the policy bundle and the
+# audit store itself is itself audited (P-07). ADMIN_READ and DATA_WRITE are on by default.
+resource "google_project_iam_audit_config" "data_access" {
+  project = var.project_id
+  service = "allServices"
+
+  audit_log_config {
+    log_type = "DATA_READ"
+  }
+  audit_log_config {
+    log_type = "DATA_WRITE"
+  }
+  audit_log_config {
+    log_type = "ADMIN_READ"
+  }
+}

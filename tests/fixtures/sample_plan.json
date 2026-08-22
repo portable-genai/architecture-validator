@@ -1,0 +1,106 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.9.0",
+  "planned_values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "google_storage_bucket.kyc",
+          "type": "google_storage_bucket",
+          "name": "kyc",
+          "provider_name": "registry.terraform.io/hashicorp/google",
+          "values": {
+            "name": "acme-kyc-sg",
+            "location": "asia-southeast1",
+            "public_access_prevention": "enforced",
+            "service_perimeter": "accessPolicies/123/servicePerimeters/sg",
+            "encryption": [
+              {
+                "kms_key_name": "projects/p/locations/asia-southeast1/keyRings/r/cryptoKeys/k"
+              }
+            ]
+          }
+        },
+        {
+          "address": "google_storage_bucket.export",
+          "type": "google_storage_bucket",
+          "name": "export",
+          "provider_name": "registry.terraform.io/hashicorp/google",
+          "values": {
+            "name": "acme-export-us",
+            "location": "us-central1",
+            "public_access_prevention": "enforced",
+            "service_perimeter": "accessPolicies/123/servicePerimeters/us",
+            "kms_key_name": "projects/p/locations/us-central1/keyRings/r/cryptoKeys/k"
+          }
+        },
+        {
+          "address": "google_sql_database_instance.public",
+          "type": "google_sql_database_instance",
+          "name": "public",
+          "provider_name": "registry.terraform.io/hashicorp/google",
+          "values": {
+            "region": "asia-southeast1",
+            "kms_key_name": "projects/p/locations/asia-southeast1/keyRings/r/cryptoKeys/k",
+            "service_perimeter": "accessPolicies/123/servicePerimeters/sg",
+            "settings": [
+              {
+                "ip_configuration": [
+                  {
+                    "ipv4_enabled": true
+                  }
+                ]
+              }
+            ],
+            "ipv4_enabled": true
+          }
+        },
+        {
+          "address": "google_cloud_run_service.api",
+          "type": "google_cloud_run_service",
+          "name": "api",
+          "provider_name": "registry.terraform.io/hashicorp/google",
+          "values": {
+            "location": "asia-southeast1"
+          }
+        }
+      ],
+      "child_modules": [
+        {
+          "address": "module.data",
+          "resources": [
+            {
+              "address": "module.data.google_bigquery_dataset.global_logs",
+              "type": "google_bigquery_dataset",
+              "name": "global_logs",
+              "provider_name": "registry.terraform.io/hashicorp/google",
+              "values": {
+                "dataset_id": "global_logs",
+                "location": "US",
+                "public_access_prevention": "enforced",
+                "service_perimeter": "accessPolicies/123/servicePerimeters/x",
+                "default_encryption_configuration": [
+                  {
+                    "kms_key_name": "projects/p/locations/us/keyRings/r/cryptoKeys/k"
+                  }
+                ]
+              }
+            },
+            {
+              "address": "module.data.google_storage_bucket.no_cmek",
+              "type": "google_storage_bucket",
+              "name": "no_cmek",
+              "provider_name": "registry.terraform.io/hashicorp/google",
+              "values": {
+                "name": "acme-no-cmek-sg",
+                "location": "asia-southeast1",
+                "public_access_prevention": "enforced",
+                "service_perimeter": "accessPolicies/123/servicePerimeters/sg"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
