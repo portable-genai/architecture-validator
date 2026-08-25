@@ -7,7 +7,7 @@ satisfies the same contract.
 
 from .generation import LLMPort
 from .governance import AgentRegistryPort, ToolCatalogPort
-from .identity import IdentityPort
+from .identity import EndUserAuthUnavailableError, IdentityPort
 from .knowledge import (
     ControlMappingClientPort,
     KnowledgeBasePort,
@@ -37,5 +37,6 @@ __all__ = [
     "AgentRegistryPort",
     "ToolCatalogPort",
     "IdentityPort",
+    "EndUserAuthUnavailableError",
     "ReviewRouterPort",
 ]
