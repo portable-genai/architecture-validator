@@ -75,7 +75,7 @@ OPA or the eval service, so those stay on the SDK-free workaround.
   `["E","F","I","UP","B","SIM"]`, target py312, hatchling backend.
 - The product is Gemini Enterprise Agent Platform; host `aiplatform.googleapis.com`.
 - Models: reasoning `gemini-3.5-flash` (thinking=high), triage `gemini-3.1-flash-lite`.
-  Unified SDK `google-genai`; ADK `google-adk==2.3.0`; A2A v1.0 + MCP 2025-11-25.
+  Unified SDK `google-genai`; ADK `google-adk==2.7.1`; A2A v1.0 + MCP 2026-07-28.
 - Policy engine: **OPA** on Cloud Run evaluating the bundled rego (`src/architecture_validator/policies`).
   The OPA call uses `httpx` (a core dep); the rego bundle ships as data files.
 - Grounding: **File Search** (Hrz2 Enterprise KB); reg-KB requirement text in practice via **Rsk1** `/ask`.

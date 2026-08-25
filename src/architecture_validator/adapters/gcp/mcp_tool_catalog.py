@@ -5,7 +5,7 @@ capabilities as ``ToolSpec`` objects: ``validate_project``, ``inject_requirement
 ``list_principles``. These are the tools the validator (or a peer agent) may invoke, each
 with an explicit JSON input schema so access is scoped and auditable (P-07, least privilege).
 
-Interop: the catalog speaks **MCP 2025-11-25**. In an ADK deployment these specs are
+Interop: the catalog speaks **MCP 2026-07-28**. In an ADK deployment these specs are
 surfaced through an ``McpToolset`` fronting the domain services; here the adapter only
 *declares* the governed catalog. The ``mcp`` package is imported lazily and only when an
 actual MCP wire object is requested.
@@ -18,7 +18,7 @@ from typing import Any
 from ...config import Settings
 from ...domain.models import ToolSpec
 
-MCP_PROTOCOL_VERSION = "2025-11-25"
+MCP_PROTOCOL_VERSION = "2026-07-28"
 
 _SUBMISSION_SCHEMA: dict[str, Any] = {
     "type": "object",
@@ -78,7 +78,7 @@ def _build_catalog() -> dict[str, ToolSpec]:
 
 
 class McpToolCatalogAdapter:
-    """Declarative MCP 2025-11-25 catalog of C3's governed tools."""
+    """Declarative MCP 2026-07-28 catalog of C3's governed tools."""
 
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
@@ -97,10 +97,10 @@ class McpToolCatalogAdapter:
     # MCP wire helpers (lazy ``mcp`` import — only when actually used)
     # ------------------------------------------------------------------ #
     def as_mcp_tools(self) -> list[Any]:
-        """Render the catalog as MCP ``Tool`` objects (MCP 2025-11-25 schema)."""
+        """Render the catalog as MCP ``Tool`` objects (MCP 2026-07-28 schema)."""
         from mcp import types as mcp_types  # lazy
 
-        # verify: https://modelcontextprotocol.io/specification/2025-11-25
+        # verify: https://modelcontextprotocol.io/specification/2026-07-28
         return [
             mcp_types.Tool(
                 name=spec.name,
