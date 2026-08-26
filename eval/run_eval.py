@@ -206,7 +206,7 @@ class FakeKnowledgeBase:
 class FakeLLM:
     """Deterministic injection LLM: emits one item per unmet principle in the prompt."""
 
-    model = "gemini-3.5-flash"
+    model = "gemini-3.7-flash"
 
     def generate(self, request: LlmRequest) -> LlmResponse:
         import re
