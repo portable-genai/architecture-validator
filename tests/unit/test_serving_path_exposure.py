@@ -30,6 +30,7 @@ from fastapi.testclient import TestClient
 from tests.conftest import LOOPBACK_PEER
 
 from architecture_validator.api import app as app_module
+from architecture_validator.api import deps
 
 _PROFILE_ENV = "ARCH_VALIDATOR_PROFILE"
 _INSECURE_DEMO_ENV = "ARCH_VALIDATOR_ALLOW_INSECURE_DEMO"
@@ -95,13 +96,45 @@ def test_a_loopback_peer_still_gets_the_offline_demo(path: str) -> None:
     assert TestClient(app_module.app, client=LOOPBACK_PEER).get(path).status_code == 200
 
 
-def test_the_loopback_peer_still_gets_the_personas_and_the_whole_principles_corpus() -> None:
-    """The picker and the corpus the local UI needs are intact; only the LAN is cut off."""
+def test_the_loopback_peer_still_gets_the_personas_and_the_whole_principles_corpus(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The picker and the corpus the local UI needs are intact; only the LAN is cut off.
+
+    The profile is set explicitly, because that is the posture this test is about. An UNSET
+    profile deliberately returns no personas: the seeded-persona adapter refuses to construct
+    when nobody chose a profile, and advertising identities that cannot be resolved would be
+    worse than advertising none. This test never set it, so it was asserting the persona list
+    of a run that had refused to build one, and it has been red for as long as the guard has
+    existed. The refusal is the documented behaviour and is covered separately below.
+    """
+    monkeypatch.setenv("ARCH_VALIDATOR_PROFILE", "local")
+    deps.get_container.cache_clear()
     client = TestClient(app_module.app, client=LOOPBACK_PEER)
     personas = client.get("/v1/personas").json()
     assert [p["id"] for p in personas] == ["analyst", "approver", "auditor", "other-tenant"]
     principles = client.get("/principles").json()["principles"]
     assert [p["id"] for p in principles] == [f"P-{n:02d}" for n in range(1, 13)]
+
+    deps.get_container.cache_clear()
+
+
+def test_an_unset_profile_advertises_no_personas_rather_than_unresolvable_ones(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The other half of the same decision, which nothing had covered.
+
+    Unset is not consent. A run where nobody chose a profile must not hand out a seeded
+    identity, so the picker is empty rather than populated with personas the adapter would
+    refuse to resolve.
+    """
+    monkeypatch.delenv("ARCH_VALIDATOR_PROFILE", raising=False)
+    deps.get_container.cache_clear()
+
+    personas = TestClient(app_module.app, client=LOOPBACK_PEER).get("/v1/personas").json()
+
+    assert personas == []
+    deps.get_container.cache_clear()
 
 
 def test_a_forwarding_header_disqualifies_even_a_loopback_peer() -> None:
