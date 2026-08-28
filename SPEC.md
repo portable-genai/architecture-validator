@@ -48,7 +48,10 @@ OPA or the eval service, so those stay on the SDK-free workaround.
 
 ## 2. Locked decisions
 
-- **Region** pinned to `asia-southeast1` (Singapore) for residency. No global default.
+- **Region** pinned to `asia-southeast1` (Singapore) for residency. No global default, and no
+  regional service silently routed to a global endpoint. The one exception is the rule corpus:
+  Agent Search serves only `global` / `us` / `eu`, so `knowledge_base.location` is its own
+  selector and defaults to `global`. It is a recorded deviation, not an inherited default.
 - **Domain core is pure stdlib** (`src/architecture_validator/domain`): frozen dataclasses, enums,
   pure services that take explicit port instances. No google-cloud / ADK / FastAPI / httpx
   / pydantic imports in the domain.
