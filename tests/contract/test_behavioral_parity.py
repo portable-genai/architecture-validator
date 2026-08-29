@@ -62,8 +62,8 @@ CONFIG_PATH = "config/settings.yaml"
 
 # The platform delegates' localhost defaults (SPEC section 6): mocked, never actually
 # served. These mirror the ``_DEFAULT_URL`` in each ``adapters/platform/remote_*`` module.
-HRZ_OBSERVABILITY = "http://localhost:8085"  # remote_audit -> A5 (Hrz5) /v1/audit
-HRZ_REGISTRY = "http://localhost:8083"  # remote_registry -> A3 (Hrz3) /v1/agents
+OBSERVABILITY = "http://localhost:8085"  # remote_audit -> A5 (Hrz5) /v1/audit
+AGENT_REGISTRY = "http://localhost:8083"  # remote_registry -> A3 (Hrz3) /v1/agents
 # remote_control_mapping -> Rsk1 compliance assistant's control-mapping module /evidence-pack
 # (served on :8080, the same port as the assistant's other routes).
 RSK_CONTROL_MAPPING = "http://localhost:8080"
@@ -231,7 +231,7 @@ def test_audit_parity_identical_payload_at_every_sink():
     assert local_audit.read_all() == [expected]
 
     with respx.mock:
-        route = respx.post(f"{HRZ_OBSERVABILITY}/v1/audit").respond(202)
+        route = respx.post(f"{OBSERVABILITY}/v1/audit").respond(202)
         _adapter("audit", "platform").record(event)
         posted = json.loads(route.calls.last.request.content)
     # local == platform: the platform sink receives the byte-identical record local stored.
@@ -260,9 +260,9 @@ def test_registry_parity_same_card_across_implementations():
     assert local_card is not None, "local registry did not return the registered card"
 
     with respx.mock:
-        respx.post(f"{HRZ_REGISTRY}/v1/agents").respond(201)
+        respx.post(f"{AGENT_REGISTRY}/v1/agents").respond(201)
         # Hrz3 serves back the same card shape for the same name (SPEC section 6).
-        respx.get(f"{HRZ_REGISTRY}/v1/agents/{card.name}").respond(200, json=to_jsonable(card))
+        respx.get(f"{AGENT_REGISTRY}/v1/agents/{card.name}").respond(200, json=to_jsonable(card))
         remote_registry = _adapter("registry", "platform")
         remote_registry.register(card)
         remote_card = remote_registry.get(card.name)

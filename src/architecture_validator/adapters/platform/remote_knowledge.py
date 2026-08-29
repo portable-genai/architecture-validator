@@ -4,7 +4,7 @@ In the full platform deployment, regulatory-context retrieval is delegated to a 
 governed knowledge service rather than C3 calling File Search directly. In practice the
 reg-KB requirement text comes via **C1** (``POST /ask``): C3 sends the context query as a
 question and maps the returned citations onto domain :class:`Citation` objects. The base
-URL is read from ``RSK_COMPLIANCE_URL`` (C1) with ``HRZ_KB_URL`` as an alternate, both with
+URL is read from ``RSK_COMPLIANCE_URL`` (C1) with ``KNOWLEDGE_BASE_URL`` as an alternate, both with
 localhost defaults.
 """
 
@@ -21,7 +21,7 @@ _DEFAULT_C1_URL = "http://localhost:8080"
 _TIMEOUT = httpx.Timeout(15.0, connect=5.0)
 
 #: The base-URL names in preference order: C1 first, the KB service as the alternate.
-_URL_ENVS = ("RSK_COMPLIANCE_URL", "HRZ_KB_URL")
+_URL_ENVS = ("RSK_COMPLIANCE_URL", "KNOWLEDGE_BASE_URL")
 
 
 def _base_url() -> str:

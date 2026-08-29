@@ -87,7 +87,7 @@ SHA-pinned; `dependabot.yml` proposes bumps; and a CI job runs `pip-audit` as a 
 
 No secret values are in the repo. `config/settings.yaml` stores only the **names** of env
 vars holding secrets and endpoints (`${VAR:-default}` interpolation, for example
-`ARCH_VALIDATOR_KMS_KEY`, `ARCH_VALIDATOR_OPA_URL`, `HRZ_S2S_TOKEN`); values are read at
+`ARCH_VALIDATOR_KMS_KEY`, `ARCH_VALIDATOR_OPA_URL`, `S2S_TOKEN`); values are read at
 construction time. A literal-secret grep over `config/` is clean. Every fixture and golden
 dataset is obviously fictional.
 
