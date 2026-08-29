@@ -15,7 +15,7 @@ API_HOST    ?= 127.0.0.1  # no-auth local dev binds loopback; override deliberat
 API_PORT    ?= 8088
 UI_DIR      := ui
 TF_DIR      := infra/terraform
-DEMO_PORT   ?= 8092
+DEMO_PORT   ?= 8120
 DEMO_OUT    ?= demo_out
 
 export ARCH_VALIDATOR_PROFILE := $(PROFILE)

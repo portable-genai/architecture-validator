@@ -71,7 +71,7 @@ before performing it, so you control the pace. (One-time: `pip install playwrigh
 playwright install chromium`.)
 
 ```bash
-# Terminal 1 - the live demo server (http://localhost:8092)
+# Terminal 1 - the live demo server (http://localhost:8120)
 source .venv/bin/activate
 PYTHONPATH=src:tests ARCH_VALIDATOR_PROFILE=local python scripts/arch_demo_server.py
 
@@ -97,7 +97,7 @@ panel shrinking to a green "nothing to inject" on the clean case. Full options (
 `HEADLESS`, `CHROME_PATH`, ...) are in [`scripts/README.md`](scripts/README.md).
 
 To narrate over the **real Next.js console** instead of the demo server, set
-`DEMO_URL=http://localhost:3000` (with §2.2's `make run-ui` + `make run-api` running).
+`DEMO_URL=http://localhost:3000` (with §2.2's built console + `make run-api` running).
 
 ### 2.2 Manual, click-through (no Playwright)
 
@@ -105,17 +105,20 @@ Either drive the demo server yourself, or click through the real console:
 
 ```bash
 # Option A - the live demo server, drive it in any browser
-PYTHONPATH=src:tests ARCH_VALIDATOR_PROFILE=local python scripts/arch_demo_server.py   # http://localhost:8092
+PYTHONPATH=src:tests ARCH_VALIDATOR_PROFILE=local python scripts/arch_demo_server.py   # http://localhost:8120
 ```
 
-Open `http://localhost:8092` and click **Next** to validate each submission, **Restart** to
+Open `http://localhost:8120` and click **Next** to validate each submission, **Restart** to
 reset. Same three steps as above.
 
 ```bash
 # Option B - the real console against the local API
 make run-api PROFILE=local        # FastAPI on :8088, profile=local
-make run-ui                       # Next.js console on http://localhost:3000
+cd ui && npm install && npm run build && npm run start   # console on http://localhost:3000
 ```
+
+Every demo runs against a production build, never a development server. `make run-ui` is the
+developer loop with hot reload, and it is not what a presenter shows.
 
 Open `http://localhost:3000`. Paste a submission into the form (or use the prefilled one)
 and click validate; the console renders exactly what `POST /validate` returns. The two
@@ -247,7 +250,8 @@ curl -s localhost:8088/policy | python -m json.tool
 Or the browser console (talks to the API on `:8088`) - see [`ui/README.md`](ui/README.md):
 
 ```bash
-make run-ui           # http://localhost:3000  (set NEXT_PUBLIC_API_BASE if the API is elsewhere)
+# Set NEXT_PUBLIC_API_BASE before the build if the API is elsewhere: it is inlined then.
+cd ui && npm install && npm run build && npm run start   # http://localhost:3000
 ```
 
 **What to highlight:** a FAIL verdict is a normal `200` carrying `passed=false` and
@@ -283,7 +287,7 @@ KB instrument); everything stays in `asia-southeast1` with CMEK + VPC-SC.
 | Playwright "executable doesn't exist" | `playwright install chromium`, or set `CHROME_PATH=/path/to/chrome`. |
 | No display for the headed walkthrough | Use §2.2 (manual browser) on a machine with a display, or `HEADLESS=1 DEMO_AUTO=1 python scripts/arch_demo_playwright.py` to self-run. |
 | "Cannot reach the demo server" | Start §2.1 Terminal 1 first; or set `DEMO_URL` if you changed `--port`. |
-| Port 8092 / 8088 in use | `python scripts/arch_demo_server.py --port 9000` (then `DEMO_URL=http://127.0.0.1:9000`); API port via `make run-api API_PORT=...`. |
+| Port 8120 / 8088 in use | `python scripts/arch_demo_server.py --port 9000` (then `DEMO_URL=http://127.0.0.1:9000`); API port via `make run-api API_PORT=...`. |
 | Console shows "backend down" | Start the API (`make run-api PROFILE=local`); check `NEXT_PUBLIC_API_BASE` in `ui/.env.local` points at `:8088`. |
 | `NotImplementedError` from a CLI command | You're on `ARCH_VALIDATOR_PROFILE=onprem` (fail-fast placeholders). Use `local` (Demo A) or `gcp` (Demo B). |
 | GCP region / VPC-SC errors | Region is pinned to `asia-southeast1` (P-03); see [`infra/terraform/README.md`](infra/terraform/README.md). |
