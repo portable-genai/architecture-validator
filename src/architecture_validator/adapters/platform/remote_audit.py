@@ -7,7 +7,7 @@ FinOps) instead of C3 calling Cloud Logging directly. This adapter implements
 ``/v1/audit`` endpoint, which returns ``202 Accepted`` (SPEC §6, A5 contract).
 
 C3 handles project metadata, not customer PII, so the event body is safe to persist. The
-base URL is read from ``HRZ_OBSERVABILITY_URL`` with a localhost default (port 8085).
+base URL is read from ``OBSERVABILITY_URL`` with a localhost default (port 8085).
 """
 
 from __future__ import annotations
@@ -34,7 +34,7 @@ class RemoteAuditAdapter:
     def __init__(self, settings: object) -> None:
         self._settings = settings
         self._base_url = _s2s.validate_base_url(
-            setting_or_default("HRZ_OBSERVABILITY_URL", _DEFAULT_URL), service="observability sink"
+            setting_or_default("OBSERVABILITY_URL", _DEFAULT_URL), service="observability sink"
         )
 
     def record(self, event: AuditEvent) -> None:

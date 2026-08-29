@@ -168,7 +168,7 @@ JSON field names mirror the domain dataclasses (enums as `.value` strings) via
 - **Residency scanner**: called in-process by default (the residency scan service); under the
   `platform` profile only, a remote scanner at `RSK_RESIDENCY_URL` (:8088) is consulted over
   `POST /scan` (best-effort).
-- **Hrz3 registry** (`HRZ_REGISTRY_URL`, :8083) and **Hrz5 observability** (`HRZ_OBSERVABILITY_URL`, :8085).
+- **Hrz3 registry** (`AGENT_REGISTRY_URL`, :8083) and **Hrz5 observability** (`OBSERVABILITY_URL`, :8085).
 
 ## 7. Coding standards
 
