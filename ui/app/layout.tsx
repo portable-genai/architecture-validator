@@ -11,7 +11,7 @@ import "./globals.css";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "C3 Architecture & Requirements Validator",
+  title: "Architecture & Requirements Validator",
   description:
     "Policy-as-code intake gate over the 12 General Principles for an APAC bank's agentic-AI platform.",
 };
