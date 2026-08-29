@@ -156,9 +156,13 @@ function TopBar({
   return (
     <header className="flex items-center justify-between border-b border-ink-200 bg-white px-4 py-2.5">
       <div className="flex items-center gap-2.5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-regblue-600 text-sm font-black text-white">
-          C3
-        </div>
+        <img
+          src="/logo.jpg"
+          alt=""
+          width={32}
+          height={32}
+          className="h-8 w-8 rounded-lg object-cover"
+        />
         <div>
           <h1 className="text-sm font-semibold leading-tight text-ink-900">
             Architecture &amp; Requirements Validator
