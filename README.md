@@ -25,7 +25,7 @@ pinned to `asia-southeast1` (Singapore) for data residency. The domain core is p
 standard library and runs the full validation pipeline **offline with no Google Cloud SDK
 installed** (the on-prem / test profile).
 
-- **Catalog identity:** Rsk3 · group `rsk` · priority P1 · buyer Architecture Review Board / Risk (also owns the residency / IaC scanner)
+- **Catalog identity:** Rsk3 · group `rsk` · priority P2 · buyer Architecture Review Board / Risk (also owns the residency / IaC scanner)
 - **Package:** `architecture_validator` · **CLI:** `architecture-validator` (`validate`, `scan`, `policy`, `principles`, ...) · the `residency-validator scan` console script is the CI-gate entry point · **Service port:** 8088
 - **Profile env var:** `ARCH_VALIDATOR_PROFILE` (`gcp` | `local` | `platform` | `onprem`; dev/tests/CI use `local`). `RESIDENCY_VALIDATOR_*` variables are not read.
 
