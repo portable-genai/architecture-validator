@@ -298,7 +298,13 @@ def policy() -> ResidencyPolicyModel:
 def healthz() -> HealthResponse:
     """Liveness/readiness probe. Reports the active profile and pinned region."""
     settings = deps.get_settings()
-    return HealthResponse(status="ok", profile=settings.profile, region=settings.region)
+    return HealthResponse(
+        status="ok",
+        profile=settings.profile,
+        region=settings.region,
+        runtime=settings.runtime,
+        generator_model=settings.generator_model,
+    )
 
 
 @app.get("/v1/personas", tags=["ops"])
