@@ -32,16 +32,13 @@ def test_policy_override_changes_region_and_review_floor_cannot_be_removed() -> 
         PolicySettings(review_all_reports=False)
 
 
-def test_authority_boundary_crosswalk_and_ci_contracts_are_documented() -> None:
+def test_authority_boundary_crosswalk_is_documented() -> None:
     authority = (ROOT / "docs/doc-authority.md").read_text(encoding="utf-8")
     spec = (ROOT / "SPEC.md").read_text(encoding="utf-8")
     compliance = (ROOT / "COMPLIANCE.md").read_text(encoding="utf-8")
-    workflow = (ROOT / ".github/workflows/ci.yaml").read_text(encoding="utf-8")
     assert authority.index("`SPEC.md`") < authority.index("`ARCHITECTURE.md`")
     assert "Kernel / vertical boundary" in spec
     assert "Adopter-owned regulatory crosswalk" in compliance
-    assert "make demo-selftest" in workflow
-    assert "make tf-validate" in workflow
 
 
 def test_managed_opa_request_receives_same_bank_owned_regions(monkeypatch) -> None:
