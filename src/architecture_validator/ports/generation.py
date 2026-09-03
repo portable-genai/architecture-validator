@@ -1,7 +1,7 @@
 """Generation port — LLM text/reasoning for remediation + injected-requirement prose.
 
 Primary GCP adapter: Gemini models on the Gemini Enterprise Agent Platform
-(``gemini-3.5-flash`` for reasoning, ``gemini-3.1-flash-lite`` for triage). C3 uses the
+(``gemini-3.5-flash`` for reasoning, ``gemini-3.5-flash`` for triage). C3 uses the
 LLM only to draft human-facing requirement text and rationale; it never decides a
 verdict (the policy engine owns verdicts).
 """
