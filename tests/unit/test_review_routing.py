@@ -1,10 +1,11 @@
-"""R8 routing: a non-clean validation report is routed to Hrz7 via the shared review-kit.
+"""R8 routing: a non-clean validation report is routed to human-review-console via the shared
+review-kit.
 
-C3 is the intake *gate* and never an autonomous approver: a report with any FAIL (or a
-HIGH/CRITICAL open finding) sets ``requires_human_review`` under the maker-checker policy (P-06),
-and rule R8 says it MUST be handed to the Hrz7 console rather than left as a boolean. These tests
-prove the producer half of that loop end-to-end against the offline local router (an in-memory
-outbox), plus the verdict -> severity / dual-control mapping in the payload.
+C3 is the intake *gate* and never an autonomous approver: a report with any FAIL (or a HIGH/CRITICAL
+open finding) sets ``requires_human_review`` under the maker-checker policy (P-06), and rule R8 says
+it MUST be handed to the human-review-console rather than left as a boolean. These tests prove the
+producer half of that loop end-to-end against the offline local router (an in-memory outbox), plus
+the verdict -> severity / dual-control mapping in the payload.
 
 C3 carries project metadata, not customer PII, so there is no redaction adapter in this repo and
 no redact-before-wire test; the payload is minimal and non-identifying by construction.
@@ -73,7 +74,9 @@ def test_validate_routes_escalated_report_to_outbox(
     assert report.requires_human_review
 
     pending = router.outbox.pending()
-    assert len(pending) == 1, "the escalated report must be routed to Hrz7 exactly once"
+    assert len(pending) == 1, (
+        "the escalated report must be routed to human-review-console exactly once"
+    )
     review = pending[0].review
     assert review.action == "arch_validation:intake"
     assert review.case_ref == report.submission.id
@@ -179,7 +182,8 @@ def test_no_router_still_returns_report(
 # --------------------------------------------------------------------------- #
 # Rule R8 — the residency scan routes the SAME way: an escalated
 # ``ResidencyScan`` (no ``findings``, only violations) is converted to a review and
-# handed to Hrz7 via the shared router, through the ``scan_to_review`` payload and the
+# handed to human-review-console via the shared router, through the ``scan_to_review`` payload and
+# the
 # isinstance dispatch. Both paths are asserted here.
 # --------------------------------------------------------------------------- #
 SCAN_ACTOR = f.SAMPLE_ACTOR
@@ -202,7 +206,9 @@ def test_escalated_scan_routes_exactly_one_review(scanner, detector, llm, tracer
 
     assert scan.requires_human_review is True
     pending = router.outbox.pending()
-    assert len(pending) == 1, "an escalated scan must route exactly one review to Hrz7"
+    assert len(pending) == 1, (
+        "an escalated scan must route exactly one review to human-review-console"
+    )
     review = pending[0].review
     assert review.action == "residency_scan"
     assert review.maker == SCAN_ACTOR

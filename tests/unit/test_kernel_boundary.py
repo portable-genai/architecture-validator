@@ -1,11 +1,11 @@
 """A7: the kernel/vertical split is a real dependency direction, not a label.
 
-The check that matters is not "a module named ``kernel`` exists". SPEC named the
-reusable evidence / audit / evaluation / identity / citation / severity kernel and the
-Rsk3 submission / principle / injection / residency vertical long before either had a
-module of its own, and a ``kernel`` that merely re-exported from the mixed
-``domain/models.py`` would satisfy every static reading of that claim while still
-forcing a fork to import the intake-gate artifacts it is about to rewrite.
+The check that matters is not "a module named ``kernel`` exists". SPEC named the reusable evidence /
+audit / evaluation / identity / citation / severity kernel and the architecture-validator submission
+/ principle / injection / residency vertical long before either had a module of its own, and a
+``kernel`` that merely re-exported from the mixed ``domain/models.py`` would satisfy every static
+reading of that claim while still forcing a fork to import the intake-gate artifacts it is about to
+rewrite.
 
 So the primary assertion here is executed, not read: a fresh interpreter imports
 ``architecture_validator.domain.kernel`` and reports whether
@@ -56,7 +56,7 @@ KERNEL_NAMES = (
     "utcnow",
 )
 
-# The Rsk3 intake-gate artifacts a fork rewrites. None may live in the kernel.
+# The architecture-validator intake-gate artifacts a fork rewrites. None may live in the kernel.
 VERTICAL_NAMES = (
     "CheckStatus",
     "InjectedRequirement",

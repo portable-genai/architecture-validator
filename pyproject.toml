@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "architecture-validator"
 version = "0.0.1"
-description = "C3 Architecture & Requirements Validator — policy-as-code intake gate that validates a project's design against the 12 General Principles (P-01..P-12), cross-checks the regulatory KB, and auto-injects the missing non-functional requirements, built ports-and-adapters on the Gemini Enterprise Agent Platform."
+description = "Architecture & Requirements Validator — policy-as-code intake gate that validates a project's design against the 12 General Principles (P-01..P-12), cross-checks the regulatory KB, and auto-injects the missing non-functional requirements, built ports-and-adapters on the Gemini Enterprise Agent Platform."
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "Apache-2.0" }
@@ -18,12 +18,12 @@ keywords = ["architecture", "policy-as-code", "opa", "rego", "governance", "gemi
 dependencies = [
   # Shared commons, pinned by tag; no build-time coupling. Public repos, so CI
   # installs them with zero credentials. hex-service-kit: outbound S2S, fail-closed net defaults,
-  # StrEnum base, to_jsonable, hash-chained WORM audit. agent-eval-kit: the Hrz4
+  # StrEnum base, to_jsonable, hash-chained WORM audit. agent-eval-kit: the model-quality-gate
   # promotion-gate client the platform eval adapter uses.
   "hex-service-kit @ git+https://github.com/portable-genai/hex-service-kit@v0.0.6",
   "agent-eval-kit @ git+https://github.com/portable-genai/agent-eval-kit@v0.0.1",
   # review-kit: the producer half of rule R8 (route a requires_human_review escalation to the
-  # Hrz7 Human-Review & Maker-Checker Console over S2S) — a shared client, never a per-repo boolean.
+  # human-review-console Human-Review & Maker-Checker Console over S2S) — a shared client, never a per-repo boolean.
   "review-kit @ git+https://github.com/portable-genai/review-kit@v0.0.1",
   "pydantic>=2.7",
   "pyyaml>=6.0",

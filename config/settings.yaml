@@ -191,7 +191,7 @@ adapters:
     platform: architecture_validator.adapters.gcp.mcp_tool_catalog:McpToolCatalogAdapter
     local: architecture_validator.adapters.local.tool_catalog:LocalToolCatalogAdapter
     onprem: architecture_validator.adapters.onprem.tool_catalog:OnPremToolCatalogAdapter
-  # Rule R8: a non-clean validation report (requires_human_review) is routed to the Hrz7
+  # Rule R8: a non-clean validation report (requires_human_review) is routed to the human-review-console
   # Human-Review & Maker-Checker Console via the shared review-kit, never left as a
   # per-repo boolean. The platform adapter makes the S2S call (bound for gcp + platform); the
   # local adapter enqueues to an in-memory outbox; onprem is the fail-fast sovereign placeholder.

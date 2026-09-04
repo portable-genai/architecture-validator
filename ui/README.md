@@ -1,6 +1,6 @@
-# Rsk3 Architecture Validator: demo console (UI)
+# `architecture-validator` Architecture Validator: demo console (UI)
 
-A small React / Next.js console for the Rsk3 Architecture & Requirements Validator. It submits
+A small React / Next.js console for the `architecture-validator`. It submits
 a `ProjectSubmission` to the FastAPI backend's `POST /validate` and renders the cited
 `ValidationReport`: the overall verdict, the per-principle findings (PASS / FAIL /
 NEEDS_INFO / NOT_APPLICABLE), and the auto-injected non-functional requirements.
@@ -24,7 +24,7 @@ bypasses the gate: it only renders what `/validate` returns.
 - `app/page.tsx`: the submission form + report view.
 - `app/layout.tsx`: the shell. Sets `export const dynamic = "force-dynamic"`, which the nonce CSP
   REQUIRES; see below.
-- `lib/types.ts`: TypeScript mirrors of the Rsk3 domain dataclasses (`to_jsonable` shapes).
+- `lib/types.ts`: TypeScript mirrors of the `architecture-validator` domain dataclasses (`to_jsonable` shapes).
 - `lib/api.ts`: typed fetch client for `/validate`, `/principles`, `/healthz`.
 - `lib/csp.mjs`: the ONE Content-Security-Policy module. Builds the policy, resolves
   `frame-ancestors` in the same three states as the backend, mints nonces, and refuses an

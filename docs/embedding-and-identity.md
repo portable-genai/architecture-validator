@@ -1,4 +1,4 @@
-# Embedding and identity: client integration guide (Rsk3 architecture-validator)
+# Embedding and identity: client integration guide (`architecture-validator` architecture-validator)
 
 This guide shows how a client runs the C3 Architecture and Requirements Validator and, when
 desired, embeds its UI inside an existing web application with secure single sign-on (SSO), so

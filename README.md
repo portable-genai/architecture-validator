@@ -1,14 +1,14 @@
-# Rsk3 · Architecture, Requirements & Residency Validator
+# `architecture-validator` · Architecture, Requirements & Residency Validator
 
 Documentation authority is declared in [`docs/doc-authority.md`](docs/doc-authority.md).
 
 **Industries:** All GenAI / cloud; especially regulated industries
 
 The **policy-as-code gate at project intake** for an APAC bank's agentic-AI platform.
-Rsk3 validates a project's requirements and design against the **12 General Principles**
+`architecture-validator` validates a project's requirements and design against the **12 General Principles**
 (P-01..P-12) expressed as policy-as-code, cross-checks the regulatory knowledge base,
 and **auto-injects the missing non-functional requirements** so a project cannot start
-non-compliant. It is the system rule **R6** points to ("any new project SHOULD pass Rsk3
+non-compliant. It is the system rule **R6** points to ("any new project SHOULD pass `architecture-validator`
 at intake"): the enforcer the other systems defer to.
 
 It also carries an in-repo **residency / IaC scanner**, so one gate covers both the design
@@ -25,7 +25,7 @@ pinned to `asia-southeast1` (Singapore) for data residency. The domain core is p
 standard library and runs the full validation pipeline **offline with no Google Cloud SDK
 installed** (the on-prem / test profile).
 
-- **Catalog identity:** Rsk3 · group `rsk` · priority P2 · buyer Architecture Review Board / Risk (also owns the residency / IaC scanner)
+- **Catalog identity:** `architecture-validator` · group `rsk` · priority P2 · buyer Architecture Review Board / Risk (also owns the residency / IaC scanner)
 - **Package:** `architecture_validator` · **CLI:** `architecture-validator` (`validate`, `scan`, `policy`, `principles`, ...) · the `residency-validator scan` console script is the CI-gate entry point · **Service port:** 8088
 - **Profile env var:** `ARCH_VALIDATOR_PROFILE` (`gcp` | `local` | `platform` | `onprem`; dev/tests/CI use `local`). `RESIDENCY_VALIDATOR_*` variables are not read.
 
@@ -62,15 +62,15 @@ flowchart LR
   SVC[ValidationService + RequirementInjectionService<br/>pure domain] --> P{{Ports}}
   P --> PE[PolicyEnginePort]
   P --> KB[KnowledgeBasePort]
-  P --> Rsk2[ControlMappingClientPort]
-  P --> Rsk4[ResidencyClientPort]
+  P --> the cloud control-mapping toolkit[ControlMappingClientPort]
+  P --> the data-residency validator[ResidencyClientPort]
   P --> LLM[LLMPort]
   P --> AU[AuditSinkPort]
   P --> TR[ObservabilityTracerPort]
   PE --> OPA[(OPA on Cloud Run<br/>rego bundle)]
-  KB --> FS[(File Search / Rsk1 /ask)]
-  Rsk2 --> CM[(Rsk1 control-mapping module)]
-  Rsk4 --> RS[(residency scan<br/>in-process; remote under platform)]
+  KB --> FS[(File Search / `compliance-advisory` /ask)]
+  the cloud control-mapping toolkit --> CM[(`compliance-advisory` control-mapping module)]
+  the data-residency validator --> RS[(residency scan<br/>in-process; remote under platform)]
   LLM --> GEM[(Gemini 3.5 Flash)]
   AU --> CL[(Cloud Logging WORM)]
 ```
@@ -82,12 +82,11 @@ four families behind each port:
   Cloud Trace, Gen AI eval, A2A registry, MCP catalog). All `google-*` imports are lazy.
 - **`local/`**: a WORKING offline laptop stack: SQLite **FTS5** reg-KB, a deterministic
   schema-driven LLM, the in-process principle evaluator as the policy engine, an
-  append-only SQLite audit, no-op tracer, and in-process Rsk2/Rsk4/registry/catalog. Runs the
+  append-only SQLite audit, no-op tracer, and in-process the cloud control-mapping toolkit/the data-residency validator/registry/catalog. Runs the
   whole pipeline with **no Google Cloud, no API key and no emulators by default**; imports
   no `google-cloud` package on the default path.
-- **`platform/`**: thin `httpx` clients to sibling services (Rsk1 `/ask` and, from Rsk1's
-  control-mapping module, `/evidence-pack`; Rsk4 `/scan`, Hrz3 registry, Hrz5
-  observability).
+- **`platform/`**: thin `httpx` clients to sibling services (`compliance-advisory` `/ask` and, from `compliance-advisory`'s
+  control-mapping module, `/evidence-pack`; the data-residency validator `/scan`, `agent-registry`, `agent-observability`).
 - **`onprem/`**: fail-fast placeholder migration targets: construct cleanly with a single
   `Settings`, satisfy the same Protocol, and raise `NotImplementedError` from each method.
 
@@ -128,7 +127,7 @@ pip install -e ".[dev]"
 ruff check src tests
 ruff format --check src tests
 pytest -m 'not integration' -q       # unit + contract, on the local profile
-python eval/run_eval.py              # the Hrz4 / P-08 offline eval gate
+python eval/run_eval.py              # the `model-quality-gate` / P-08 offline eval gate
 ```
 
 The managed stack installs with `pip install -e ".[gcp,dev]"` and runs under
@@ -195,7 +194,7 @@ See `SPEC.md` (authoritative build spec), `ARCHITECTURE.md` (ports table, topolo
 
 ## Cost and latency
 
-Size this system's cost and latency with the shared interactive calculator: [**live**](https://portable-genai.github.io/cost-latency-calculator/calc/calculator.html?system=Rsk3) or the [in-repo page](cost-latency-calculator.html). The engine and the pricing book are maintained once in [cost-latency-calculator](https://github.com/portable-genai/cost-latency-calculator).
+Size this system's cost and latency with the shared interactive calculator: [**live**](https://portable-genai.github.io/cost-latency-calculator/calc/calculator.html?system=architecture-validator) or the [in-repo page](cost-latency-calculator.html). The engine and the pricing book are maintained once in [cost-latency-calculator](https://github.com/portable-genai/cost-latency-calculator).
 
 ## License
 

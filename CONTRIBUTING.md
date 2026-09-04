@@ -1,6 +1,6 @@
-# Contributing: Rsk3 Architecture & Requirements Validator
+# Contributing: `architecture-validator`
 
-Thanks for helping improve Rsk3. This is an engineering-portfolio reference repo; the bar is
+Thanks for helping improve `architecture-validator`. This is an engineering-portfolio reference repo; the bar is
 production-grade style and a green offline gate.
 
 ## Setup
@@ -19,7 +19,7 @@ ruff check src tests            # lint: must be clean
 ruff format --check src tests   # format: must be clean
 pytest -m 'not integration' -q  # unit + contract: must pass
 mypy src                        # type-check: should pass
-python eval/run_eval.py         # Hrz4 / P-08 eval gate: should pass (exit 0)
+python eval/run_eval.py         # `model-quality-gate` / P-08 eval gate: should pass (exit 0)
 ```
 
 `make fmt` auto-formats and auto-fixes; `make lint` runs ruff + mypy; `make test` runs the

@@ -6,7 +6,7 @@ responsibilities **stop** and a sibling catalog system takes over. Cross-referen
 [`README.md`](../../README.md), [`SPEC.md`](../../SPEC.md),
 [`COMPLIANCE.md`](../../COMPLIANCE.md).
 
-### What does Rsk3 actually produce?
+### What does `architecture-validator` actually produce?
 
 It is the **policy-as-code gate at project intake**. From a `ProjectSubmission` (the
 project's requirements and design metadata) it produces three cited artifacts:
@@ -49,7 +49,7 @@ without the model. This is the "deterministic domain service" pattern.
 
 Nothing auto-executes. `ReviewPolicy` sets `requires_human_review=True` on any FAIL or any
 HIGH/CRITICAL open finding (`domain/hitl.py`), and that escalation is then **routed to the
-Hrz7 Human-Review and Maker-Checker Console** through the shared `review-kit` client
+`human-review-console`** through the shared `review-kit` client
 (rule R8), not left as a per-repo boolean. A fully clean report (all PASS / NOT_APPLICABLE)
 may pass without a checker by design, because that is the point of a gate that lets compliant
 intakes through; a non-clean one goes to a human.
@@ -61,16 +61,16 @@ evaluation, the requirement-injection logic, and the policy-as-code bundle. It *
 (via the `platform` profile's httpx delegates) several cross-cutting concerns owned by
 sibling systems; do not rebuild these in a fork:
 
-| Concern | Owned by (catalog id / repo) | Rsk3's role |
+| Concern | Owned by (catalog id / repo) | `architecture-validator`'s role |
 |---|---|---|
-| Regulatory Q&A / reg-KB with citations | **Rsk1** `compliance-advisory` | consumes it (`/ask`) to ground findings and injected requirements |
-| Control coverage / evidence packs | **Rsk1** `compliance-advisory` (`domain/control_mapping/`) | consumes its coverage / evidence-pack output; does not re-derive control maps |
-| Agent registry, versioning, discovery | **Hrz3** `agent-registry` | publishes its A2A AgentCard for discovery |
-| AI-quality / eval / model-risk promotion gate | **Hrz4** `model-quality-gate` | its eval metrics gate promotion (bundle `rsk3-architecture-validator`); the offline gate mirrors it |
-| Observability + immutable WORM audit | **Hrz5** `agent-observability` | writes audit events to it; traces spans through it |
-| Human-review / maker-checker console | **Hrz7** human-review console | routes every `requires_human_review` escalation to it (R8) |
+| Regulatory Q&A / reg-KB with citations | `compliance-advisory` | consumes it (`/ask`) to ground findings and injected requirements |
+| Control coverage / evidence packs | `compliance-advisory` (`domain/control_mapping/`) | consumes its coverage / evidence-pack output; does not re-derive control maps |
+| Agent registry, versioning, discovery | `agent-registry` | publishes its A2A AgentCard for discovery |
+| AI-quality / eval / model-risk promotion gate | `model-quality-gate` | its eval metrics gate promotion (bundle `rsk3-architecture-validator`); the offline gate mirrors it |
+| Observability + immutable WORM audit | `agent-observability` | writes audit events to it; traces spans through it |
+| Human-review / maker-checker console | `human-review-console` | routes every `requires_human_review` escalation to it (R8) |
 
-The guardrail gateway (Hrz1) is **N/A** for this repo: Rsk3 processes project metadata, not
+The guardrail gateway (`agent-guardrail-gateway`) is **N/A** for this repo: `architecture-validator` processes project metadata, not
 customer PII, so there is no runtime redactor to place behind a guardrail port.
 
 ### Can I use this to enforce a different principle set?
@@ -79,7 +79,7 @@ Yes, that is the point. The 12-principle set is a deliberately closed governance
 it is data plus rules: you replace the principle definitions (`policies/principles.yaml` +
 the rego rules + `domain/principles_eval.py`, kept in step by the contract rule) and the
 injection prompts for your own control framework, and keep the whole hexagon, the four
-profiles, the eval gate, and the Hrz7 routing. See [`docs/ADOPTING.md`](../ADOPTING.md) and
+profiles, the eval gate, and the `human-review-console` routing. See [`docs/ADOPTING.md`](../ADOPTING.md) and
 [adoption-faq.md](adoption-faq.md).
 
 ### How do I see it working?

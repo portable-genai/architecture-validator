@@ -1,4 +1,4 @@
-"""The Rsk3 VERTICAL domain models (system C3, the intake gate itself).
+"""The architecture-validator VERTICAL domain models (system C3, the intake gate itself).
 
 This module is the vertical half of the SPEC §2 "Kernel / vertical boundary": the
 artifacts a fork of this repo REWRITES. C3 is the policy-as-code gate at project intake,

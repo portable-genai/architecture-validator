@@ -1,7 +1,6 @@
-# Rsk3 infrastructure (Terraform): asia-southeast1
+# `architecture-validator` infrastructure (Terraform): asia-southeast1
 
-Concrete, single-region (`asia-southeast1`, Singapore) infrastructure for the Rsk3
-Architecture & Requirements Validator. Only `project_id` and a few genuinely per-tenant
+Concrete, single-region (`asia-southeast1`, Singapore) infrastructure for the `architecture-validator`. Only `project_id` and a few genuinely per-tenant
 values are variables; every service identifier, location and resource name is concrete, so
 the stack is a faithful description of the sovereign deploy rather than a parameterised
 template.
@@ -14,7 +13,7 @@ template.
 | `kms.tf` | Regional CMEK key ring + key; explicit per-service-agent bindings | P-09, P-03 |
 | `artifact_registry.tf` | CMEK-encrypted Docker repo for the OPA + app images | P-08, P-09 |
 | `cloud_run.tf` | The **OPA policy service** (internal ingress, dedicated SA) | P-01, P-03 |
-| `cloudbuild.tf` | The **intake-gate** build: lint + tests + the Hrz4 eval gate, then build/push the OPA image | P-08, P-02 |
+| `cloudbuild.tf` | The **intake-gate** build: lint + tests + the `model-quality-gate`, then build/push the OPA image | P-08, P-02 |
 | `logging_worm.tf` | Locked WORM audit bucket (~7y) + sink + data-access audit config | P-07, P-03, P-09 |
 | `iam.tf` | Least-privilege service identities for app / OPA / build | P-09 |
 | `vpc_sc.tf` | VPC Service Controls perimeter around the AI / policy APIs | P-01, P-03 |

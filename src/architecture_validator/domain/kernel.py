@@ -1,11 +1,11 @@
 """The reusable, vertical-neutral kernel of the domain (system C3, package
 ``architecture_validator``).
 
-SPEC §2 "Kernel / vertical boundary" divides this domain in two: the shared **evidence,
-audit, evaluation, identity, citation and severity** contracts a fork inherits untouched,
-and the Rsk3 **vertical** (``ProjectSubmission``, the 12-principle evaluator, requirement
-injection, the residency scan artifacts) a fork rewrites. This module is the first half,
-made physical.
+SPEC §2 "Kernel / vertical boundary" divides this domain in two: the shared **evidence, audit,
+evaluation, identity, citation and severity** contracts a fork inherits untouched, and the
+architecture-validator **vertical** (``ProjectSubmission``, the 12-principle evaluator, requirement
+injection, the residency scan artifacts) a fork rewrites. This module is the first half, made
+physical.
 
 The rule that gives the boundary teeth is the **dependency direction**: this module
 imports nothing from ``architecture_validator``. It depends on the standard library and the
@@ -74,7 +74,7 @@ class Regulator(StrEnum):
     """Financial-services regulators whose guidance backs a finding, plus CROSS.
 
     ``CROSS`` is reused as the lightweight provenance regulator for a citation that
-    points at a rule in the adopting vertical's own ruleset (for Rsk3, a General
+    points at a rule in the adopting vertical's own ruleset (for architecture-validator, a General
     Principle) rather than at a regulator instrument -- see :class:`Citation` and SPEC §3.
     """
 
@@ -110,7 +110,8 @@ class Citation:
     """Provenance attached to every finding and injected requirement.
 
     A finding may cite a regulator instrument (page-level provenance, as the rest of
-    the toolkit requires) and/or a rule from the adopting vertical's ruleset. In Rsk3 a
+    the toolkit requires) and/or a rule from the adopting vertical's ruleset. In
+    architecture-validator a
     principle reference uses ``regulator=CROSS`` with the principle id as ``source_id``
     (e.g. "P-03"), so a reviewer can always trace a verdict back to the rule that
     produced it.

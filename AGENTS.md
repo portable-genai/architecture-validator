@@ -7,7 +7,7 @@ here. Read it first. This file carries only what is specific to this one.
 
 ## What this is
 
-Catalog id **Rsk3**. Validates a project's requirements / design against the General
+Catalog id `architecture-validator`. Validates a project's requirements / design against the General
 Principles (policy-as-code) + the reg KB, and auto-injects the missing non-functional
 requirements at intake.
 
@@ -15,7 +15,7 @@ requirements at intake.
 
 | | |
 |---|---|
-| Catalog id | `Rsk3` |
+| Catalog id | `architecture-validator` |
 | Package | `src/architecture_validator/` |
 | Profile variable | `ARCH_VALIDATOR_PROFILE` |
 | Adapter families | `gcp`, `local`, `onprem`, `platform` |
