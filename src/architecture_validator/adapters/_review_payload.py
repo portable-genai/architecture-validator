@@ -5,10 +5,10 @@ architecture *intake* validator: it reasons over project metadata (submission id
 region and controls, the 12 General Principles) and never handles customer PII, so there is no
 redaction adapter and no ``pii-kit`` in this repo. The payload is therefore kept minimal and
 non-identifying by construction; the only scrubbing applied is whitespace normalisation, so a
-descriptor or finding snippet cannot smuggle newlines into the console. Hrz7 still redacts again
-before its own audit write (defense in depth). The maker (the analyst/service that produced the
-report) and the tenant are asserted here and trusted by Hrz7 because this is an authenticated S2S
-caller (per-hop OBO is the deferred next layer).
+descriptor or finding snippet cannot smuggle newlines into the console. human-review-console still
+redacts again before its own audit write (defense in depth). The maker (the analyst/service that
+produced the report) and the tenant are asserted here and trusted by human-review-console because
+this is an authenticated S2S caller (per-hop OBO is the deferred next layer).
 """
 
 from __future__ import annotations
@@ -71,7 +71,9 @@ def _kit_citations(report: ValidationReport) -> tuple[KitCitation, ...]:
 
 
 def report_to_review(report: ValidationReport, *, maker: str, tenant: str = "") -> Review:
-    """Build the review a producer submits to Hrz7 when a validation report escalates (R8)."""
+    """Build the review a producer submits to human-review-console when a validation report
+    escalates (R8).
+    """
     submission = report.submission
     descriptor = (
         f"Architecture intake validation for {submission.name} "
@@ -132,7 +134,8 @@ def _scan_kit_citations(scan: ResidencyScan) -> tuple[KitCitation, ...]:
 
 
 def scan_to_review(scan: ResidencyScan, *, maker: str, tenant: str = "") -> Review:
-    """Build the review a producer submits to Hrz7 when a residency scan escalates (R8).
+    """Build the review a producer submits to human-review-console when a residency scan escalates
+    (R8).
 
     The residency-scan counterpart to :func:`report_to_review`: an escalated
     :class:`ResidencyScan` carries no ``findings``, so its review is assembled from the scan's

@@ -32,9 +32,9 @@ The platform adapters source their client from the shared `hex_service_kit.s2s`
 (`adapters/platform/_s2s.py`). Every delegate validates its base URL at construction
 (`https://` required outside loopback, rejected otherwise) and attaches an S2S bearer plus
 the verified end-user actor as a signed header pair, not a spoofable JSON body field. The
-six delegates are `remote_knowledge` (Rsk1), `remote_control_mapping` (Rsk1's
+six delegates are `remote_knowledge` (`compliance-advisory`), `remote_control_mapping` (`compliance-advisory`'s
 control-mapping module), `remote_residency` (a remote residency scanner), `remote_registry`
-(Hrz3), `remote_audit` (Hrz5), and `remote_evaluation` (Hrz4). The receiving services own
+(`agent-registry`), `remote_audit` (`agent-observability`), and `remote_evaluation` (`model-quality-gate`). The receiving services own
 verification.
 
 ### Does anything bind 0.0.0.0 by default?
@@ -64,12 +64,12 @@ a JSONL export/restore path, and an exposed `verify_chain()`. The module docstri
 exactly which tamper classes are and are not caught (the chain alone carries no secret, so
 it cannot by itself detect a full rewrite or tail truncation without an external anchor).
 In production the `gcp` profile writes to a **locked WORM bucket**, which provides
-non-rewritability itself. This repo does not replace the platform audit system (**Hrz5**);
+non-rewritability itself. This repo does not replace the platform audit system (`agent-observability`);
 see [features-faq.md](features-faq.md).
 
 ### Does the audit trail contain customer PII?
 
-No. Rsk3 processes project metadata and design documents, **not customer PII** (stated in
+No. `architecture-validator` processes project metadata and design documents, **not customer PII** (stated in
 `domain/models.py` and `COMPLIANCE.md`). No model, index, registry, audit, or human-review
 call ingests PII, so there is no boundary redactor to review and no `pii_patterns` pack
 (checks C3 / C4 are **N/A by design**). The audit event carries the submission summary and

@@ -10,24 +10,22 @@ returning a silent wrong answer.
 What this repo actually ships (see ``config/settings.yaml`` ``adapters:``), and how each
 port's parity is proven here:
 
-* ``audit`` (Hrz5) and ``registry`` (Hrz3) have a REAL httpx ``platform`` delegate beside
-  the in-process ``local`` adapter. For each, the same request is put through ``local``
-  and through the ``platform`` client (its sibling horizontal-platform service mocked with
-  respx at the documented SPEC section 6 contract), and the two are asserted identical at
-  the boundary (``local == platform``): the audit sink receives the byte-identical record
-  the local sink stored, and the registry round-trips the byte-identical ``AgentCard``.
-* ``control_mapping`` (Rsk2 / C2) also has a REAL httpx ``platform`` delegate, but its
-  ``local`` adapter is a canned best-effort signal (empty by design, mirroring the
-  degrade-gracefully managed path), so ``local == platform`` does not apply. Instead the
-  respx suite proves the delegate faithfully round-trips C2's ``/evidence-pack`` wire
-  contract into first-class domain :class:`Citation` objects, while ``local`` is asserted
-  deterministic across independent instances.
-* ``policy_engine`` (the consequential intake gate) has NO ``platform`` delegate (a laptop
-  runs one app), so its parity claim is *determinism*: the same submission through two
-  independent ``local`` evaluators returns byte-identical findings. This is the property a
-  migration relies on, so it is asserted directly.
-* every port's ``onprem`` placeholder constructs and satisfies the Protocol but raises
-  ``NotImplementedError`` on use (fail-fast), asserted for all four ports above.
+* ``audit`` (agent-observability) and ``registry`` (agent-registry) have a REAL httpx ``platform``
+  delegate beside the in-process ``local`` adapter. For each, the same request is put through
+  ``local`` and through the ``platform`` client (its sibling horizontal-platform service mocked with
+  respx at the documented SPEC section 6 contract), and the two are asserted identical at the
+  boundary (``local == platform``): the audit sink receives the byte-identical record the local sink
+  stored, and the registry round-trips the byte-identical ``AgentCard``. * ``control_mapping`` (the
+  cloud control-mapping toolkit / C2) also has a REAL httpx ``platform`` delegate, but its ``local``
+  adapter is a canned best-effort signal (empty by design, mirroring the degrade-gracefully managed
+  path), so ``local == platform`` does not apply. Instead the respx suite proves the delegate
+  faithfully round-trips C2's ``/evidence-pack`` wire contract into first-class domain
+  :class:`Citation` objects, while ``local`` is asserted deterministic across independent instances.
+  * ``policy_engine`` (the consequential intake gate) has NO ``platform`` delegate (a laptop runs
+  one app), so its parity claim is *determinism*: the same submission through two independent
+  ``local`` evaluators returns byte-identical findings. This is the property a migration relies on,
+  so it is asserted directly. * every port's ``onprem`` placeholder constructs and satisfies the
+  Protocol but raises ``NotImplementedError`` on use (fail-fast), asserted for all four ports above.
 
 Plus the end-to-end proof: the full ``ValidationService`` intake pipeline runs
 deterministically under ``local`` and fails fast under ``onprem`` with **zero domain
@@ -62,9 +60,9 @@ CONFIG_PATH = "config/settings.yaml"
 
 # The platform delegates' localhost defaults (SPEC section 6): mocked, never actually
 # served. These mirror the ``_DEFAULT_URL`` in each ``adapters/platform/remote_*`` module.
-OBSERVABILITY = "http://localhost:8085"  # remote_audit -> A5 (Hrz5) /v1/audit
-AGENT_REGISTRY = "http://localhost:8083"  # remote_registry -> A3 (Hrz3) /v1/agents
-# remote_control_mapping -> Rsk1 compliance assistant's control-mapping module /evidence-pack
+OBSERVABILITY = "http://localhost:8085"  # remote_audit -> A5 (agent-observability) /v1/audit
+AGENT_REGISTRY = "http://localhost:8083"  # remote_registry -> A3 (agent-registry) /v1/agents
+# remote_control_mapping -> compliance-advisory's control-mapping module /evidence-pack
 # (served on :8080, the same port as the assistant's other routes).
 RSK_CONTROL_MAPPING = "http://localhost:8080"
 
@@ -120,7 +118,8 @@ def test_policy_engine_parity_is_deterministic_across_independent_evaluators():
 
 
 # --------------------------------------------------------------------------- #
-# ControlMappingClientPort (Rsk2 / C2) — real httpx delegate; faithful wire round-trip
+# ControlMappingClientPort (the cloud control-mapping toolkit / C2) — real httpx delegate; faithful
+# wire round-trip
 # --------------------------------------------------------------------------- #
 def test_control_mapping_parity_delegate_round_trips_c2_wire_contract():
     """The platform delegate maps C2's ``/evidence-pack`` payload onto domain Citations.
@@ -178,7 +177,7 @@ def test_control_mapping_parity_delegate_round_trips_c2_wire_contract():
 def test_control_mapping_delegate_defaults_to_compliance_assistant_port(monkeypatch):
     """The remote control-mapping client reads ``RSK_CONTROL_MAPPING_URL`` and defaults to :8080.
 
-    The control-mapping evidence packs come from the Rsk1 compliance assistant's
+    The control-mapping evidence packs come from the compliance-advisory's
     control-mapping module, so an unset env var must resolve to the compliance assistant's
     port (:8080), and the env var NAME is the one pinned override knob. The ``/evidence-pack``
     wire contract the delegate POSTs is independent of which endpoint serves it.
@@ -201,7 +200,7 @@ def test_control_mapping_delegate_defaults_to_compliance_assistant_port(monkeypa
 
 
 # --------------------------------------------------------------------------- #
-# AuditSinkPort (Hrz5) — byte-identical record shape at every sink boundary
+# AuditSinkPort (agent-observability) — byte-identical record shape at every sink boundary
 # --------------------------------------------------------------------------- #
 def test_audit_parity_identical_payload_at_every_sink():
     """The platform sink receives the byte-identical record the local sink stored."""
@@ -242,7 +241,7 @@ def test_audit_parity_identical_payload_at_every_sink():
 
 
 # --------------------------------------------------------------------------- #
-# AgentRegistryPort (Hrz3) — the same AgentCard round-trips either way
+# AgentRegistryPort (agent-registry) — the same AgentCard round-trips either way
 # --------------------------------------------------------------------------- #
 def test_registry_parity_same_card_across_implementations():
     card = AgentCard(
@@ -261,7 +260,7 @@ def test_registry_parity_same_card_across_implementations():
 
     with respx.mock:
         respx.post(f"{AGENT_REGISTRY}/v1/agents").respond(201)
-        # Hrz3 serves back the same card shape for the same name (SPEC section 6).
+        # agent-registry serves back the same card shape for the same name (SPEC section 6).
         respx.get(f"{AGENT_REGISTRY}/v1/agents/{card.name}").respond(200, json=to_jsonable(card))
         remote_registry = _adapter("registry", "platform")
         remote_registry.register(card)

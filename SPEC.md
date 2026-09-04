@@ -1,20 +1,20 @@
-# SPEC: Rsk3 Architecture, Requirements & Residency Validator
+# SPEC: `architecture-validator`
 
 Documentation authority is declared in [`docs/doc-authority.md`](docs/doc-authority.md).
 
 Authoritative build spec for `architecture_validator`. The repo is a faithful ports-and-adapters
-clone of the Rsk1 pattern with the Rsk3 domain (policy-as-code intake gate) substituted. It
+clone of the `compliance-advisory` pattern with the `architecture-validator` domain (policy-as-code intake gate) substituted. It
 also carries an in-repo residency / IaC scanner family, so this one service is a single
 policy-as-code gate over both project designs and cloud posture.
 
 ## 1. What it is
 
-Rsk3 is the policy-as-code gate at project intake. Given a `ProjectSubmission`, it validates
+`architecture-validator` is the policy-as-code gate at project intake. Given a `ProjectSubmission`, it validates
 the project against the 12 General Principles (P-01..P-12), cross-checks the regulatory
 knowledge base, and auto-injects the missing non-functional requirements so a project
 cannot start non-compliant. It is the system rule **R6** points to ("any new project SHOULD
-pass Rsk3 at intake"). It handles project metadata and design docs, not customer/PII data, so
-it carries no Hrz1 Guardrail dependency.
+pass `architecture-validator` at intake"). It handles project metadata and design docs, not customer/PII data, so
+it carries no `agent-guardrail-gateway` dependency.
 
 Beside the design-time architecture checks it runs a **residency / IaC scanner**. Given a
 Terraform plan JSON (`terraform show -json`), a directory of
@@ -23,10 +23,10 @@ scanner emits a `ResidencyScan` with a PASS/FAIL verdict over region and residen
 (disallowed region, global / multi-region endpoint, missing regional CMEK, public egress, no
 VPC-SC perimeter). The detector is deterministic and pure-stdlib on the file path, so it drops
 into a pipeline as a CI gate that exits non-zero on FAIL. The scanner also handles
-infrastructure config, not customer PII, so it too carries no Hrz1 Guardrail dependency. The
+infrastructure config, not customer PII, so it too carries no `agent-guardrail-gateway` dependency. The
 same gate is what `POST /validate` consults in-process for residency context.
 
-- Catalog identity: Rsk3 · group `rsk` · priority P1 · buyer Architecture Review Board / Risk (also owns the residency / IaC scanner)
+- Catalog identity: `architecture-validator` · group `rsk` · priority P1 · buyer Architecture Review Board / Risk (also owns the residency / IaC scanner)
 - Package `architecture_validator`; primary CLI `architecture-validator` (with `validate`, `scan`, `policy`, `principles`, ...); the `residency-validator scan` console script is the CI-gate entry point; service port 8088
 - Profile env var `ARCH_VALIDATOR_PROFILE` (gcp | local | platform | onprem; dev/tests/CI set local, prod sets gcp, both explicitly). Unset is a THIRD state, not a chosen `local`: the adapter family still falls back to the SDK-free `local` one, but every security decision treats "nobody chose" as its own input, so the CORS dev-origin fallback is off and the no-auth seeded personas refuse to serve. An unknown or mis-capitalised value is refused outright. `RESIDENCY_VALIDATOR_*` variables are not read.
 
@@ -35,8 +35,8 @@ same gate is what `POST /validate` consults in-process for residency context.
 | Profile | Backends | Google Cloud SDK | Use |
 | --- | --- | --- | --- |
 | `gcp` | OPA on Cloud Run, File Search, Gemini, Cloud Logging WORM, Cloud Trace, Gen AI eval, A2A registry, MCP | required (`[gcp]` extra), imports lazy | production (set `ARCH_VALIDATOR_PROFILE=gcp` explicitly) |
-| `local` | SQLite **FTS5** reg-KB, deterministic schema-driven LLM, in-process principle evaluator, append-only SQLite audit, no-op tracer, offline eval gate, in-process Rsk2/Rsk4/registry/catalog | none on the default path | a WORKING offline laptop run; dev/tests/CI default |
-| `platform` | thin `httpx` clients to sibling services (Rsk1/Rsk2/Rsk4/Hrz3/Hrz5) | none | the agentic mesh |
+| `local` | SQLite **FTS5** reg-KB, deterministic schema-driven LLM, in-process principle evaluator, append-only SQLite audit, no-op tracer, offline eval gate, in-process the cloud control-mapping toolkit/the data-residency validator/registry/catalog | none on the default path | a WORKING offline laptop run; dev/tests/CI default |
+| `platform` | thin `httpx` clients to sibling services (`compliance-advisory`/the cloud control-mapping toolkit/the data-residency validator/`agent-registry`, `agent-observability`) | none | the agentic mesh |
 | `onprem` | fail-fast placeholders (raise `NotImplementedError`) | none | Google Distributed Cloud migration target |
 
 The `local` profile runs the whole intake pipeline with no Google Cloud, no API key and no
@@ -57,7 +57,7 @@ OPA or the eval service, so those stay on the SDK-free workaround.
   / pydantic imports in the domain.
 - **Kernel / vertical boundary:** shared evidence, audit, evaluation, identity, citation and
   severity contracts are the reusable kernel. `ProjectSubmission`, the 12-principle evaluator,
-  requirement injection and residency scan models are the Rsk3 vertical. A fork preserves the
+  requirement injection and residency scan models are the `architecture-validator` vertical. A fork preserves the
   kernel contracts and replaces the vertical rules/artifacts. The split is **physical, and the
   dependency direction is enforced**: `domain/kernel.py` owns the neutral contracts and imports
   nothing from `architecture_validator`, `domain/identity.py` is the identity half of the kernel (a thin
@@ -81,7 +81,7 @@ OPA or the eval service, so those stay on the SDK-free workaround.
   Unified SDK `google-genai`; ADK `google-adk==2.7.1`; A2A v1.0 + MCP 2026-07-28.
 - Policy engine: **OPA** on Cloud Run evaluating the bundled rego (`src/architecture_validator/policies`).
   The OPA call uses `httpx` (a core dep); the rego bundle ships as data files.
-- Grounding: **File Search** (Hrz2 Enterprise KB); reg-KB requirement text in practice via **Rsk1** `/ask`.
+- Grounding: **File Search** (`enterprise-knowledge-base`); reg-KB requirement text in practice via `compliance-advisory` `/ask`.
 - Audit: Cloud Logging locked WORM bucket, retention 2557 days. Tracing: Cloud Trace via
   OpenTelemetry, message-content capture OFF. Eval: Gen AI evaluation service.
 - `[gcp]` extra holds all google-cloud-* / google-adk / google-genai; core deps are
@@ -126,7 +126,7 @@ resolves a server-verified `Principal` via the `IdentityPort` (`api/security.py`
 2. load the 12 principles → `policy_engine.evaluate(submission, principles)` → findings.
    - On `PolicyEvaluationError` (OPA down) fall back to `domain/principles_eval.evaluate_all`.
 3. for each FAIL / NEEDS_INFO finding: `knowledge_base.retrieve(context)` for KB citations,
-   plus best-effort `control_mapping.coverage` (Rsk2) and `residency.findings` (Rsk4).
+   plus best-effort `control_mapping.coverage` (the cloud control-mapping toolkit) and `residency.findings` (the data-residency validator).
 4. `RequirementInjectionService.inject(...)`: the LLM drafts one InjectedRequirement per
    unmet principle (grounded in the finding + KB citations); falls back to the deterministic
    remediation text if the LLM is unavailable.
@@ -163,12 +163,12 @@ JSON field names mirror the domain dataclasses (enums as `.value` strings) via
 
 ### Sibling contracts this repo consumes
 
-- **Rsk1 compliance** (`RSK_COMPLIANCE_URL`, :8080): `POST /ask` for reg-KB requirement text.
-- **Control-mapping** (`RSK_CONTROL_MAPPING_URL`, :8080): `POST /evidence-pack` (best-effort), served by the Rsk1 compliance assistant's control-mapping module.
+- **`compliance-advisory` compliance** (`RSK_COMPLIANCE_URL`, :8080): `POST /ask` for reg-KB requirement text.
+- **Control-mapping** (`RSK_CONTROL_MAPPING_URL`, :8080): `POST /evidence-pack` (best-effort), served by the `compliance-advisory`'s control-mapping module.
 - **Residency scanner**: called in-process by default (the residency scan service); under the
   `platform` profile only, a remote scanner at `RSK_RESIDENCY_URL` (:8088) is consulted over
   `POST /scan` (best-effort).
-- **Hrz3 registry** (`AGENT_REGISTRY_URL`, :8083) and **Hrz5 observability** (`OBSERVABILITY_URL`, :8085).
+- **`agent-registry`** (`AGENT_REGISTRY_URL`, :8083) and **`agent-observability`** (`OBSERVABILITY_URL`, :8085).
 
 ## 7. Coding standards
 

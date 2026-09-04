@@ -49,10 +49,10 @@ governance ruleset.
 
 ### How does the human-review routing behave in a fork?
 
-Rule R8 routes any non-clean `ValidationReport` to the Hrz7 Human-Review and Maker-Checker
+Rule R8 routes any non-clean `ValidationReport` to the `human-review-console` Human-Review and Maker-Checker
 Console through the shared `review-kit` client (`adapters/*/review_router.py`). In a
 fork, `local` enqueues to an in-memory outbox (offline), `gcp`/`platform` submit over S2S to
-`HUMAN_REVIEW_URL`, and `onprem` is the fail-fast placeholder. You wire your Hrz7
+`HUMAN_REVIEW_URL`, and `onprem` is the fail-fast placeholder. You wire your `human-review-console`
 endpoint; you do not re-implement the console.
 
 ### Does the CI run for my fork out of the box?

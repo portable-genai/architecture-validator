@@ -1,6 +1,6 @@
-# Demo guide - Rsk3 Architecture, Requirements & Residency Validator
+# Demo guide - `architecture-validator`
 
-Step-by-step scripts for demoing Rsk3 two ways (plus the residency CI gate in
+Step-by-step scripts for demoing `architecture-validator` two ways (plus the residency CI gate in
 §2.5):
 
 - **Demo A - Policy-as-code intake gate, offline** (the headline flow): two synthetic

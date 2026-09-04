@@ -78,7 +78,8 @@ class ValidationService:
         self._review = review_policy or ReviewPolicy()
         self._allowed_regions = allowed_regions
         self._injector = RequirementInjectionService(llm, tracer)
-        # Rule R8: when a report requires human review it is routed to Hrz7 (the maker-checker
+        # Rule R8: when a report requires human review it is routed to human-review-console (the
+        # maker-checker
         # console) rather than terminating in the ``requires_human_review`` boolean. Optional so a
         # unit test or a deployment that leaves the escalation unrouted still audits ESCALATED, it
         # just is not forwarded to a console.
@@ -93,7 +94,8 @@ class ValidationService:
         """Validate ``submission`` for ``actor`` via the SPEC §5 intake pipeline.
 
         ``actor`` and ``tenant`` are the server-verified caller identity: ``actor`` is the audit
-        subject and the maker asserted when the report is routed to Hrz7 (rule R8); ``tenant``
+        subject and the maker asserted when the report is routed to human-review-console (rule R8);
+        ``tenant``
         (when set) partitions the routed review. C3's submission is project metadata with no tenant
         field, so the tenant is threaded from the call, not read off the artifact. The default
         empty ``tenant`` keeps existing callers/tests unaffected.
@@ -146,7 +148,8 @@ class ValidationService:
         # 5) Audit the verdict (submission summary + verdict; no customer PII).
         self._audit_report(actor, report)
 
-        # 6) Rule R8: route a non-clean report to the Hrz7 maker-checker console. This is the
+        # 6) Rule R8: route a non-clean report to the human-review-console maker-checker console.
+        # This is the
         #    producer half of the maker-checker loop over an already-assembled, already-audited
         #    report (the audit ESCALATED record is the source of truth); routing is a hand-off,
         #    never fatal to the request, so a console outage degrades to audit-only.

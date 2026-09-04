@@ -1,6 +1,6 @@
 # Adopting this repo as your base
 
-This repository (Rsk3, the Architecture and Requirements Validator) is a **common base**
+This repository (`architecture-validator`, the Architecture and Requirements Validator) is a **common base**
 that a bank or other regulated institution forks to build its own **policy-as-code intake
 gate**: a service that validates a project's design against a governance ruleset, grounds
 each finding in a regulatory knowledge base, and auto-injects the missing non-functional
@@ -24,7 +24,7 @@ The core is hexagonal, and the boundary between reusable machinery and your gove
 vertical is a physical module split with an enforced dependency direction (practices-audit
 check A7). `domain/kernel.py` owns the vertical-neutral contracts and imports nothing from
 `architecture_validator`, so you can import it without loading a line of intake-gate logic;
-`domain/models.py` holds only the Rsk3 vertical and re-exports every kernel name.
+`domain/models.py` holds only the `architecture-validator` vertical and re-exports every kernel name.
 
 | Layer | Where | For a new control framework |
 |---|---|---|
@@ -33,7 +33,7 @@ check A7). `domain/kernel.py` owns the vertical-neutral contracts and imports no
 | **Vertical (the ruleset itself)** | the C3 models (`Principle`, `ProjectSubmission`, `ValidationReport`, `PrincipleFinding`, `InjectedRequirement`) in `domain/models.py`, the principle definitions (`policies/principles.yaml`), the two rule surfaces (`domain/principles_eval.py` and `policies/*.rego`), `domain/prompts.py`, the local fixtures, and the eval golden set | rewrite for your framework |
 
 If your product is another *governance / assurance* gate, most of the hexagon, the four
-profiles, the deterministic-verdict pattern, the eval gate, and the Hrz7 human-review routing
+profiles, the deterministic-verdict pattern, the eval gate, and the `human-review-console` human-review routing
 transfer directly; you replace the principle definitions and the injection prompts, and
 retune the policy numbers and the taxonomy.
 
@@ -120,21 +120,21 @@ This repo is one system in a catalog of composable GRC systems. Several concerns
 rebuild them (see [`docs/faq/features-faq.md`](faq/features-faq.md) for the full map). The
 `platform` profile's adapters are already thin HTTP clients to them:
 
-- **Rsk1** compliance assistant / reg-KB: consumed via `remote_knowledge` (`/ask`) to ground
+- `compliance-advisory` / reg-KB: consumed via `remote_knowledge` (`/ask`) to ground
   findings and injected requirements.
 - **Control-mapping evidence packs**: consumed via `remote_control_mapping` for control coverage,
-  served by the Rsk1 compliance assistant's control-mapping module.
+  served by the `compliance-advisory`'s control-mapping module.
 - **Residency / region-violation findings**: served in-process by this repo's own residency
   scanner; the `platform` profile can point `remote_residency` at an external scanner instead.
-- **Hrz3** agent registry: this agent publishes its A2A AgentCard for discovery.
-- **Hrz4** AI-quality / model-risk gate: owns promotion (bundle `rsk3-architecture-validator`);
+- `agent-registry`: this agent publishes its A2A AgentCard for discovery.
+- `model-quality-gate` AI-quality / model-risk gate: owns promotion (bundle `rsk3-architecture-validator`);
   the offline eval gate mirrors its thresholds.
-- **Hrz5** observability + immutable WORM audit: audit events and trace spans go to it.
-- **Hrz7** human-review / maker-checker console: every `requires_human_review` escalation is
+- `agent-observability` + immutable WORM audit: audit events and trace spans go to it.
+- `human-review-console` human-review / maker-checker console: every `requires_human_review` escalation is
   routed to it over the shared `review-kit` (rule R8); you wire your endpoint, you do
   not re-implement the console.
 
-The guardrail gateway (Hrz1) is **not** integrated: Rsk3 processes project metadata, not
+The guardrail gateway (`agent-guardrail-gateway`) is **not** integrated: `architecture-validator` processes project metadata, not
 customer PII, so there is no runtime redactor to place behind a guardrail port.
 
 ## 6. Adoption checklist
@@ -147,5 +147,5 @@ customer PII, so there is no runtime redactor to place behind a guardrail port.
 - [ ] Replaced the local reg-KB corpus and every synthetic fixture.
 - [ ] Rebuilt the eval golden set + rubrics for your framework.
 - [ ] Reviewed the deploy posture (Dockerfile, Terraform, bind address).
-- [ ] Wired your Hrz7 human-review endpoint and decided which sibling services you integrate vs stub.
+- [ ] Wired your `human-review-console` human-review endpoint and decided which sibling services you integrate vs stub.
 - [ ] Recorded your baseline upstream tag so you can take future fixes.

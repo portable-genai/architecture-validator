@@ -67,7 +67,7 @@ The `onprem` adapters are deliberate fail-fast placeholders (they raise
 `Settings` arg, so the *interface contract* for a sovereign migration is proven and enforced
 by CI today. The actual on-prem implementations are the migration work, scoped in
 [`docs/onprem-migration.md`](../onprem-migration.md). This repo is **not** the sovereign-exit
-*planner* (that is the sibling **Rgc9 operational-resilience mapping** system's concentration
+*planner* (that is the sibling **`operational-resilience-mapping` operational-resilience mapping** system's concentration
 and exit planning: APRA CPS 230, MAS / HKMA outsourcing); this repo is one of the systems
 whose exit that planner reasons about, and it
 is the gate that *checks* other projects have a documented exit (rule_p_12).

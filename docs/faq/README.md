@@ -1,7 +1,7 @@
 # FAQ index
 
 Answers to the questions different teams ask when evaluating, adopting, or reviewing this
-repository (Rsk3, the Architecture and Requirements Validator) as a common base. Each file
+repository (`architecture-validator`, the Architecture and Requirements Validator) as a common base. Each file
 is written for a specific audience; skim the one that matches your role.
 
 | FAQ | For | Answers |

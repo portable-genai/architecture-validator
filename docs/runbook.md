@@ -1,6 +1,6 @@
-# Runbook: Rsk3 Architecture, Requirements & Residency Validator
+# Runbook: `architecture-validator`
 
-Operational notes for deploying and running Rsk3 (the policy-as-code intake gate, plus the
+Operational notes for deploying and running `architecture-validator` (the policy-as-code intake gate, plus the
 residency / IaC scanner) on the Gemini Enterprise Agent Platform in
 `asia-southeast1` (Singapore). This is a reference build; adapt it to your own
 change-management and model-risk sign-off before any live use.
@@ -42,7 +42,7 @@ The ADK agent is deployed to Agent Runtime separately via the Agent Platform SDK
 the resulting `reasoningEngine` resource name in `ARCH_VALIDATOR_AGENT_ENGINE` (or
 `settings.agent_engine.resource_name`).
 
-Rsk3 has a UI: a Next.js console (`ui/`) that renders the `ValidationReport`. Run it with
+`architecture-validator` has a UI: a Next.js console (`ui/`) that renders the `ValidationReport`. Run it with
 `make run-ui` (dev server). Set `ARCH_VALIDATOR_FRAME_ANCESTORS` (backend) and
 `NEXT_PUBLIC_FRAME_ANCESTORS` (UI) together when embedding it into a host app; see
 `docs/embedding-and-identity.md`.
@@ -70,13 +70,13 @@ The audit bucket retention is `retention_days` (default 2557, ~7 years, validate
 least that) and the bucket is locked by default (`locked = true` in `logging_worm.tf`),
 which is **irreversible**. To trial without locking, set `locked = false` (not compliant
 for production). Only verdict summaries, never customer PII, are ever written to the audit
-log: Rsk3 processes project metadata, so it has no Hrz1 Guardrail dependency.
+log: `architecture-validator` processes project metadata, so it has no `agent-guardrail-gateway` dependency.
 
 ## 5. Profiles and the offline default
 
 `ARCH_VALIDATOR_PROFILE` selects the adapter family with no domain change: `local`
 (a WORKING SDK-free offline stack, dev/test/CI), `gcp` (managed services),
-`platform` (thin HTTP clients to sibling Rsk1/Rsk2/Rsk4/Hrz3/Hrz5 services), and `onprem`
+`platform` (thin HTTP clients to sibling `compliance-advisory`/the cloud control-mapping toolkit/the data-residency validator/`agent-registry`, `agent-observability` services), and `onprem`
 (fail-fast migration placeholders; see `docs/onprem-migration.md`).
 
 **Set it explicitly, in every environment.** The variable has three states, and an unset one

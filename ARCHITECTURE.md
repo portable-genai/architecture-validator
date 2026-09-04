@@ -1,4 +1,4 @@
-# ARCHITECTURE: Rsk3 Architecture, Requirements & Residency Validator
+# ARCHITECTURE: `architecture-validator`
 
 Documentation authority is declared in [`docs/doc-authority.md`](docs/doc-authority.md).
 
@@ -17,14 +17,14 @@ covers both the design-time validation pipeline and the residency-scan pipeline.
 | Port | Method(s) | gcp primary | local (offline) | platform | onprem |
 | --- | --- | --- | --- | --- | --- |
 | `PolicyEnginePort` | `evaluate(submission, principles)` | OPA REST on Cloud Run | in-process principle evaluator | (same OPA client) | fail-fast stub |
-| `KnowledgeBasePort` | `retrieve(query, top_k)` | File Search | SQLite FTS5 reg-KB | Rsk1 `/ask` client | fail-fast stub |
-| `ControlMappingClientPort` | `coverage(scope)` | Rsk2 client | in-process canned | Rsk2 client | fail-fast stub |
+| `KnowledgeBasePort` | `retrieve(query, top_k)` | File Search | SQLite FTS5 reg-KB | `compliance-advisory` `/ask` client | fail-fast stub |
+| `ControlMappingClientPort` | `coverage(scope)` | the cloud control-mapping toolkit client | in-process canned | the cloud control-mapping toolkit client | fail-fast stub |
 | `ResidencyClientPort` | `findings(scope)` | in-process scan service | in-process scan service | remote scanner (`RSK_RESIDENCY_URL`) | fail-fast stub |
 | `LLMPort` | `generate`, `classify` | Gemini (google-genai) | deterministic schema-driven | n/a | fail-fast stub |
-| `AuditSinkPort` | `record(event)` | Cloud Logging WORM | append-only SQLite | Hrz5 client | fail-fast stub |
+| `AuditSinkPort` | `record(event)` | Cloud Logging WORM | append-only SQLite | `agent-observability` client | fail-fast stub |
 | `ObservabilityTracerPort` | `span`, `record_token_usage` | Cloud Trace (OTel) | no-op | n/a | no-op |
 | `EvaluationGatePort` | `evaluate(dataset_path)` | Gen AI eval service | in-repo offline gate | n/a | fail-fast stub |
-| `AgentRegistryPort` | `register`, `get`, `list` | in-proc A2A registry | in-process (Firestore emulator opt-in) | Hrz3 client | fail-fast stub |
+| `AgentRegistryPort` | `register`, `get`, `list` | in-proc A2A registry | in-process (Firestore emulator opt-in) | `agent-registry` client | fail-fast stub |
 | `ToolCatalogPort` | `list_tools`, `get_tool` | MCP catalog | in-process | n/a | fail-fast stub |
 | `IdentityPort` | `resolve(ctx)` | verify IAP assertion | seeded dev personas (no IdP) | (same IAP adapter) | fail-fast stub |
 
@@ -50,7 +50,7 @@ behind its own ports. It exposes `POST /scan` and `GET /policy` on the same serv
 | --- | --- | --- | --- | --- | --- |
 | `IaCScannerPort` | `scan(scope)` | Cloud Asset Inventory + SCC | seeded in-process estate | n/a | fail-fast stub |
 | `LLMPort` (scan) | `generate` remediation prose | Gemini | deterministic schema-driven | n/a | fail-fast stub |
-| `AuditSinkPort` | `record(event)` | Cloud Logging WORM | append-only SQLite | Hrz5 client | fail-fast stub |
+| `AuditSinkPort` | `record(event)` | Cloud Logging WORM | append-only SQLite | `agent-observability` client | fail-fast stub |
 
 The deterministic detection path (parse -> detect -> verdict) uses **no port**: it is pure
 domain plus the `architecture_validator.pipelines.terraform` parser (stdlib `json` + `re`), which is
@@ -85,8 +85,8 @@ flowchart TB
   DEPS --> IS[RequirementInjectionService]
   VS --> PE[PolicyEnginePort]
   VS --> KB[KnowledgeBasePort]
-  VS --> Rsk2[ControlMappingClientPort]
-  VS --> Rsk4[ResidencyClientPort]
+  VS --> the cloud control-mapping toolkit[ControlMappingClientPort]
+  VS --> the data-residency validator[ResidencyClientPort]
   VS --> AU[AuditSinkPort]
   VS --> TR[ObservabilityTracerPort]
   IS --> LLM[LLMPort]
@@ -95,7 +95,7 @@ flowchart TB
   PE -.onprem.-> STUB1[[NotImplemented]]
   KB -.gcp.-> FS[(File Search)]
   KB -.local.-> FTS[(SQLite FTS5<br/>reg-KB)]
-  KB -.platform.-> Rsk1[(Rsk1 /ask)]
+  KB -.platform.-> `compliance-advisory`[(`compliance-advisory` /ask)]
   AU -.gcp.-> WORM[(Cloud Logging WORM)]
   AU -.local.-> SQL[(append-only SQLite)]
   LLM -.gcp.-> GEM[(Gemini 3.5 Flash)]
@@ -139,19 +139,19 @@ sequenceDiagram
 
 ```mermaid
 flowchart LR
-  Rsk3[Rsk3 Architecture Validator] -->|grounding| Hrz2[Hrz2 Enterprise KB]
-  Rsk3 -->|reg requirement text| Rsk1[Rsk1 Compliance Assistant]
-  Rsk3 -->|control coverage| Rsk2[Rsk1 control-mapping module]
-  Rsk3 -->|residency scan in-process<br/>remote only under platform| Rsk4[Residency scanner<br/>in-process]
-  Rsk3 -->|register / discover| Hrz3[Hrz3 Registry]
-  Rsk3 -->|audit / trace| Hrz5[Hrz5 Observability]
-  Rsk3 -->|promotion gate| Hrz4[Hrz4 Eval]
-  R6[Rule R6: pass Rsk3 at intake] --> Rsk3
+  `architecture-validator`[`architecture-validator` Architecture Validator] -->|grounding| `enterprise-knowledge-base`[`enterprise-knowledge-base`]
+  `architecture-validator` -->|reg requirement text| `compliance-advisory`[`compliance-advisory`]
+  `architecture-validator` -->|control coverage| the cloud control-mapping toolkit[`compliance-advisory` control-mapping module]
+  `architecture-validator` -->|residency scan in-process<br/>remote only under platform| the data-residency validator[Residency scanner<br/>in-process]
+  `architecture-validator` -->|register / discover| `agent-registry`[`agent-registry`]
+  `architecture-validator` -->|audit / trace| `agent-observability`[`agent-observability`]
+  `architecture-validator` -->|promotion gate| `model-quality-gate`[`model-quality-gate` Eval]
+  R6[Rule R6: pass `architecture-validator` at intake] --> `architecture-validator`
 ```
 
-Rsk3 is the enforcer the other systems defer to: it operationalises every General Principle
+`architecture-validator` is the enforcer the other systems defer to: it operationalises every General Principle
 as a check, and is the "enforced by" target for P-02 and P-05 and the gate for R6. It has
-**no Hrz1 Guardrail dependency**: it processes project metadata, not customer PII.
+**no `agent-guardrail-gateway` dependency**: it processes project metadata, not customer PII.
 
 ## Deploy-time residency (Terraform reconciliation)
 

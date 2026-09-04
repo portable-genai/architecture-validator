@@ -1,4 +1,4 @@
-# Demo scripts - Rsk3 Architecture & Requirements Validator
+# Demo scripts - `architecture-validator`
 
 All scripts are SDK-free and run the real intake-gate flow against the in-process
 `local` profile (no Google Cloud, no API key). They use the repo's built-in synthetic

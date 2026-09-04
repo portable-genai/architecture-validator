@@ -99,7 +99,8 @@ class ResidencyScanService:
         self._tracer = tracer
         self._audit = audit
         self._review = review_policy or HumanReviewPolicy()
-        # Rule R8: when a scan requires human review it is routed to Hrz7 (the maker-checker
+        # Rule R8: when a scan requires human review it is routed to human-review-console (the
+        # maker-checker
         # console) rather than terminating in a boolean. Optional so the pure domain and every
         # existing test/caller keep working without a router bound (best-effort escalation).
         self._review_router = review_router
@@ -121,7 +122,8 @@ class ResidencyScanService:
     ) -> ResidencyScan:
         """Scan ``target`` (a plan/.tf path or a project scope) for ``actor``.
 
-        ``tenant`` (when set) is carried through to the Hrz7 review hand-off (rule R8) so a routed
+        ``tenant`` (when set) is carried through to the human-review-console review hand-off (rule
+        R8) so a routed
         escalation is attributed to the caller's tenant; the artifact itself has no tenant field
         (an infrastructure scan is not customer-tenant-scoped), so the default empty ``tenant``
         keeps existing callers unaffected.
@@ -187,7 +189,7 @@ class ResidencyScanService:
         return scan
 
     def _maybe_route_review(self, scan: ResidencyScan, actor: str, tenant: str) -> None:
-        """Route an escalated scan to the Hrz7 maker-checker console (rule R8).
+        """Route an escalated scan to the human-review-console maker-checker console (rule R8).
 
         Runs after the audit write so the WORM record of the scan exists first. Best-effort and
         non-fatal: routing must never break the deterministic gate verdict, so any router / network

@@ -1,12 +1,11 @@
 """Remote-platform control-mapping adapter — HTTP client to the compliance assistant.
 
-Consumes control-coverage evidence relevant to a project scope from the **Rsk1 compliance
-assistant's control-mapping module** (served on the same port as the assistant's other
-routes). C3 uses
-this best-effort: the :class:`ValidationService` calls ``coverage`` inside a try/except, so
-an outage degrades a finding's context rather than failing the validation. The adapter POSTs
-to the service's ``/evidence-pack`` endpoint and maps the returned evidence onto domain
-:class:`Citation` objects. The base URL is read from ``RSK_CONTROL_MAPPING_URL`` with a
+Consumes control-coverage evidence relevant to a project scope from the **compliance-advisory
+compliance assistant's control-mapping module** (served on the same port as the assistant's other
+routes). C3 uses this best-effort: the :class:`ValidationService` calls ``coverage`` inside a
+try/except, so an outage degrades a finding's context rather than failing the validation. The
+adapter POSTs to the service's ``/evidence-pack`` endpoint and maps the returned evidence onto
+domain :class:`Citation` objects. The base URL is read from ``RSK_CONTROL_MAPPING_URL`` with a
 localhost default of the compliance assistant's port (8080).
 """
 
