@@ -57,8 +57,7 @@ endpoint; you do not re-implement the console.
 
 ### Does the CI run for my fork out of the box?
 
-Yes. `ci.yaml` (`ARCH_VALIDATOR_PROFILE: local`) runs ruff + format + mypy + the test suite,
-and `eval-gate.yaml` (`onprem`) runs the eval, both with **no cloud credentials and no org
+`gate.yaml` runs `make check` on the `local` profile, with **no cloud credentials and no org
 secrets**. A fork's build is green immediately; you add secrets only when you wire the
 `gcp`/`platform` profiles. Note the eval gate measures the *reference* principle set until you
 rebuild the golden set for your framework, that is an explicit adoption step, not a silent

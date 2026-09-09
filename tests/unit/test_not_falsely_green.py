@@ -19,11 +19,11 @@ from agent_eval_kit import assert_can_go_red
 from eval.run_eval import (
     DEFAULT_DATASET,
     RESIDENCY_DATASET,
-    RESIDENCY_THRESHOLDS,
-    THRESHOLDS,
     _make_service,
     load_golden,
     load_residency_golden,
+    load_residency_thresholds_from_rubrics,
+    load_thresholds_from_rubrics,
     score_citation_accuracy,
     score_injection_recall,
     score_principle_accuracy,
@@ -36,6 +36,12 @@ from eval.run_eval import (
 
 from architecture_validator.domain.residency.detector import ViolationDetector
 from architecture_validator.domain.residency.models import ResidencyPolicy
+
+#: The reviewed bars, read PER FAMILY from `eval/rubrics/` exactly as the gate reads
+#: them. The module-level dicts this used to import are gone: having both was two homes
+#: for one number, and the two families share metric names with different bars.
+THRESHOLDS = load_thresholds_from_rubrics()
+RESIDENCY_THRESHOLDS = load_residency_thresholds_from_rubrics()
 
 #: A submission the golden set expects to FAIL, so every architecture metric scores something.
 _EXAMPLE = next(e for e in load_golden(DEFAULT_DATASET) if e.expected_failed_principles)

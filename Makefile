@@ -51,6 +51,12 @@ seed-local: ## Seed a tiny local corpus and run a sample validation (offline, PR
 eval: ## Run the A4 eval gate (principle accuracy / injection recall / citations / safety).
 	$(PYTHON) eval/run_eval.py
 
+evals-doc: ## Regenerate docs/evals.md from the rubrics and the golden sets.
+	$(PYTHON) scripts/render_evals_doc.py
+
+evals-doc-check: ## Fail when docs/evals.md and the artifacts it describes disagree.
+	$(PYTHON) scripts/render_evals_doc.py --check
+
 scan: ## Scan the bundled sample plan (the residency CI gate; FAILs on violations).
 	residency-validator scan --plan tests/fixtures/sample_plan.json
 
@@ -72,7 +78,7 @@ plugin: ## Render the Agent Plugins 1.0.0 directory from this repo's own declara
 mcp-serve: ## Serve the governed tool catalog over MCP 2026-07-28 (stdio; needs [gcp]).
 	python -m architecture_validator.mcp
 
-check: lint test eval portability demo-selftest tf-validate plugin ## The full offline quality gate (no node, no cloud).
+check: lint test eval evals-doc-check portability demo-selftest tf-validate plugin ## The full offline quality gate (no node, no cloud).
 
 ui-install: ## Install the console's pinned dependencies from the committed lockfile.
 	npm ci --prefix $(UI_DIR)
