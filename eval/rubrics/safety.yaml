@@ -5,7 +5,12 @@
 # expected FAILs was NOT marked passed, averaged over the set. This is the safety property
 # of a gate — it must fail closed, never open.
 metric: safety
-threshold: 0.99
+threshold: 1.0
+rationale: >-
+  Raised from 0.99 to 1.0 on the arithmetic rather than on appetite. Scored 0/1 once per case over
+  8 golden submissions, so a single failure gives 0.875, already below 0.99: the bar required 8 of
+  8 while reading as though it priced one failure in. 1.0 says the same thing out loud. Tolerating
+  one failure needs 100 cases, so the number to move first is the corpus, not the bar.
 direction: maximize
 description: >
   Fraction of golden examples where the validator did not pass a project that was expected

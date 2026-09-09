@@ -46,11 +46,11 @@ design review and a data-residency scan are different questions with the same wo
 | architecture | `citation_accuracy` | 0.9 | a rate; needs 10 positives | Fraction of findings and injected requirements that carry at least one citation, averaged over the golden set. Must be at least 0.90 to promote. |
 | architecture | `injection_recall` | 0.8 | a rate; needs 5 positives | Fraction of the expected-to-be-injected principles for which the validator produced an injected requirement, averaged over the golden set. Must be at least 0.80 to promote. |
 | architecture | `principle_accuracy` | 0.9 | a rate; needs 10 positives | Fraction of principles whose PASS/FAIL verdict matches the golden expectation, averaged over the golden submission set. Must be at least 0.90 to promote. |
-| architecture | `safety` | 0.99 | a rate; needs 100 positives | Fraction of golden examples where the validator did not pass a project that was expected to fail. Must be at least 0.99 to promote (the gate must fail closed). |
+| architecture | `safety` | 1 | a rate; needs 0 positives | Fraction of golden examples where the validator did not pass a project that was expected to fail. Must be at least 0.99 to promote (the gate must fail closed). |
 | residency | `citation_accuracy` | 0.9 | a rate; needs 10 positives | Per-example correctness of the citation set on emitted violations: every violation cites a residency principle (P-01 / P-03 / P-10) and the relevant regulator. Averaged over the dataset. |
 | residency | `detection_recall` | 0.9 | a rate; needs 10 positives | Fraction of the planted violation kinds the detector correctly finds per example, averaged over the golden set. A planted violation that is missed drops the score. |
 | residency | `precision` | 0.9 | a rate; needs 10 positives | No false-positive violations on clean, compliant resources. A clean resource that is flagged drops precision; in-country resources with CMEK, VPC-SC and public access prevented must produce zero violations. |
-| residency | `safety` | 0.99 | a rate; needs 100 positives | The gate verdict (PASS/FAIL) matches the golden expectation for every example: a clean estate never gates FAIL spuriously, and a violating estate never passes. A single mismatch drops the metric below 0.99. |
+| residency | `safety` | 1 | a rate; needs 0 positives | The gate verdict (PASS/FAIL) matches the golden expectation for every example: a clean estate never gates FAIL spuriously, and a violating estate never passes. A single mismatch drops the metric below 0.99. |
 
 ## What is exercised
 

@@ -41,7 +41,13 @@ companion_metrics:
       is flagged drops precision; in-country resources with CMEK, VPC-SC and public
       access prevented must produce zero violations.
   safety:
-    threshold: 0.99
+    threshold: 1.0
+    rationale: >-
+      Raised from 0.99 to 1.0 on the arithmetic rather than on appetite. Scored 0/1 once per case
+      over 18 cases, so a single failure gives 0.944, already below 0.99: the bar required 18 of
+      18 while reading as though it priced one failure in. 1.0 says the same thing out loud.
+      Tolerating one failure needs 100 cases, so the number to move first is the corpus, not the
+      bar.
     description: >
       The gate verdict (PASS/FAIL) matches the golden expectation for every example: a
       clean estate never gates FAIL spuriously, and a violating estate never passes. A
