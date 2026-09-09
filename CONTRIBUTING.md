@@ -60,7 +60,7 @@ configuration docs, the eval gate when claims change, and the portability/demo e
 ## Commits
 
 Commits are authored solely by the contributor. Do not add `Co-Authored-By` trailers.
-Branch off `main`; open a PR; CI (`ci.yaml`) and the eval gate (`eval-gate.yaml`) must pass.
+Branch off `main`; open a PR; the hosted `gate.yaml` check, which runs `make check`, must pass.
 
 ## Markdown style
 

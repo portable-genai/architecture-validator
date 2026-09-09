@@ -60,7 +60,12 @@ from pathlib import Path
 # The --mode smoke|gate scaffold + aligned report rendering come from the shared
 # agent-eval-kit commons; this script keeps only its own offline
 # evaluators and gate runner.
-from agent_eval_kit import eval_main
+from agent_eval_kit import (
+    assert_denominator_supports,
+    dataset_digest,
+    eval_main,
+    load_rubrics,
+)
 
 from architecture_validator.domain import principles_eval
 from architecture_validator.domain.models import (
@@ -86,22 +91,29 @@ from architecture_validator.domain.validation_service import ValidationService
 # --------------------------------------------------------------------------- #
 # Thresholds — the promotion bar (SPEC A4 / P-08). Mirror eval/rubrics/*.yaml.
 # --------------------------------------------------------------------------- #
-THRESHOLDS: dict[str, float] = {
-    "principle_accuracy": 0.90,
-    "injection_recall": 0.80,
-    "citation_accuracy": 0.90,
-    "safety": 0.99,
-}
+#: Where every bar lives. Not two dicts here: a threshold written as a Python literal carries no
+#: argument. The rubric files carry the reasoning beside the number, and
+#: `agent_eval_kit.load_rubrics` reads them. What was here before was BOTH the dicts and loaders
+#: that overlaid the rubrics on top of them, falling back to the dicts when PyYAML was missing,
+#: which is a silent path that uses the number nobody reviews.
 
-# Residency-scan family thresholds. Mirror eval/rubrics/residency/*.yaml.
-RESIDENCY_THRESHOLDS: dict[str, float] = {
-    "detection_recall": 0.90,
-    "precision": 0.90,
-    "citation_accuracy": 0.90,
-    "safety": 0.99,
-}
+#: The metrics this runner scores, in report order. Named so `assert_covers` can compare them
+#: with the rubric set in BOTH directions: a metric with no reviewed bar got its threshold from
+#: a call site, and a bar that names no metric reads as governance while gating nothing.
+SCORED_ARCH: tuple[str, ...] = (
+    "principle_accuracy",
+    "injection_recall",
+    "citation_accuracy",
+    "safety",
+)
+SCORED_RESIDENCY: tuple[str, ...] = ("detection_recall", "precision", "citation_accuracy", "safety")
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
+#: The two rubric trees. They are separate directories rather than one because the two
+#: families share metric NAMES (`citation_accuracy`, `safety`) and must not share bars: a
+#: design review and a data-residency scan are different questions with the same words.
+ARCH_RUBRICS = _REPO_ROOT / "eval" / "rubrics"
+RESIDENCY_RUBRICS = ARCH_RUBRICS / "residency"
 DEFAULT_DATASET = _REPO_ROOT / "eval" / "datasets" / "golden_submissions.jsonl"
 RESIDENCY_DATASET = _REPO_ROOT / "eval" / "datasets" / "golden_scans.jsonl"
 
@@ -174,18 +186,12 @@ def load_thresholds_from_rubrics() -> dict[str, float]:
     Uses a non-recursive glob so the residency rubrics under ``eval/rubrics/residency/``
     are not picked up here (they are loaded by :func:`load_residency_thresholds_from_rubrics`).
     """
-    thresholds = dict(THRESHOLDS)
-    try:
-        import yaml  # type: ignore[import-untyped]
-    except ImportError:
-        return thresholds
-    rubric_dir = _REPO_ROOT / "eval" / "rubrics"
-    for rubric_path in sorted(rubric_dir.glob("*.yaml")):
-        doc = yaml.safe_load(rubric_path.read_text(encoding="utf-8")) or {}
-        metric = doc.get("metric")
-        if isinstance(metric, str) and "threshold" in doc:
-            thresholds[metric] = float(doc["threshold"])
-    return thresholds
+    # The TOP-LEVEL rubrics only. `load_rubrics` walks the tree, and the residency family lives
+    # in a subdirectory precisely because the two share metric NAMES with different bars, so
+    # merging them would silently give a design review the residency family's threshold.
+    rubrics = load_rubrics(ARCH_RUBRICS).group("")
+    rubrics.assert_covers(SCORED_ARCH)
+    return rubrics.thresholds()
 
 
 # --------------------------------------------------------------------------- #
@@ -350,25 +356,47 @@ def run_arch_offline(dataset: Path, thresholds: dict[str, float]) -> EvalReport:
     if service is None:  # pragma: no cover - defensive
         raise SystemExit("could not construct ValidationService for the offline gate")
 
-    agg: dict[str, _PerMetric] = {m: _PerMetric() for m in THRESHOLDS}
+    agg: dict[str, _PerMetric] = {metric: _PerMetric() for metric in SCORED_ARCH}
+    # What each rate is ACTUALLY a fraction of. None of them is the submission count:
+    # principle_accuracy is a fraction over the principles evaluated per submission,
+    # citation_accuracy over the findings and injected requirements a review produces,
+    # and injection_recall over the principles a reviewer expected to be injected.
+    produced: dict[str, int] = {"principles": 0, "cited_items": 0, "expected_injections": 0}
     print(f"Running offline eval gate over {len(examples)} golden submissions (architecture).\n")
     for example in examples:
         report = service.validate(example.submission, actor="eval-bot")
         agg["principle_accuracy"].scores.append(score_principle_accuracy(report, example))
         agg["injection_recall"].scores.append(score_injection_recall(report, example))
         agg["citation_accuracy"].scores.append(score_citation_accuracy(report))
+        produced["principles"] += len({f.principle_id for f in report.findings})
+        produced["cited_items"] += len(report.findings) + len(report.injected_requirements)
+        produced["expected_injections"] += len(example.expected_injected_principles)
         agg["safety"].scores.append(score_safety(report, example))
 
     results = tuple(
         EvalMetricResult(
             metric=metric,
             score=round(agg[metric].mean, 4),
-            threshold=thresholds.get(metric, THRESHOLDS[metric]),
-            passed=round(agg[metric].mean, 4) >= thresholds.get(metric, THRESHOLDS[metric]),
+            threshold=thresholds[metric],
+            passed=round(agg[metric].mean, 4) >= thresholds[metric],
         )
-        for metric in ("principle_accuracy", "injection_recall", "citation_accuracy", "safety")
+        for metric in SCORED_ARCH
     )
-    return EvalReport(dataset=str(dataset), results=results, n_examples=len(examples))
+    # The corpus must be able to express every bar that claims a rate, against what actually
+    # divides it. None of these is the submission count.
+    for metric, denominator in (
+        ("principle_accuracy", produced["principles"]),
+        ("citation_accuracy", produced["cited_items"]),
+        ("injection_recall", produced["expected_injections"]),
+    ):
+        assert_denominator_supports(thresholds[metric], denominator, metric=metric)
+    return EvalReport(
+        dataset=str(dataset),
+        results=results,
+        n_examples=len(examples),
+        dataset_digest=dataset_digest(dataset),
+        evaluator="offline heuristic (no cloud creds)",
+    )
 
 
 # =========================================================================== #
@@ -419,24 +447,9 @@ def load_residency_golden(path: Path) -> list[ResidencyGoldenExample]:
 
 def load_residency_thresholds_from_rubrics() -> dict[str, float]:
     """Read residency thresholds from ``eval/rubrics/residency/*.yaml`` when PyYAML is available."""
-    thresholds = dict(RESIDENCY_THRESHOLDS)
-    try:
-        import yaml  # type: ignore[import-untyped]
-    except ImportError:
-        return thresholds
-    rubric_dir = _REPO_ROOT / "eval" / "rubrics" / "residency"
-    for name in ("detection.yaml", "citation_accuracy.yaml"):
-        rubric_path = rubric_dir / name
-        if not rubric_path.exists():
-            continue
-        doc = yaml.safe_load(rubric_path.read_text(encoding="utf-8")) or {}
-        metric = doc.get("metric")
-        if isinstance(metric, str) and "threshold" in doc:
-            thresholds[metric] = float(doc["threshold"])
-        for companion, spec in (doc.get("companion_metrics") or {}).items():
-            if isinstance(spec, dict) and "threshold" in spec:
-                thresholds[str(companion)] = float(spec["threshold"])
-    return thresholds
+    rubrics = load_rubrics(ARCH_RUBRICS).group("residency")
+    rubrics.assert_covers(SCORED_RESIDENCY)
+    return rubrics.thresholds()
 
 
 def _residency_gates(violation, policy: ResidencyPolicy) -> bool:
@@ -448,7 +461,7 @@ def run_residency_offline(dataset: Path, thresholds: dict[str, float]) -> EvalRe
     examples = load_residency_golden(dataset)
     detector = ViolationDetector(ResidencyPolicy())
 
-    agg: dict[str, _PerMetric] = {m: _PerMetric() for m in RESIDENCY_THRESHOLDS}
+    agg: dict[str, _PerMetric] = {metric: _PerMetric() for metric in SCORED_RESIDENCY}
     print(
         f"Running offline eval gate over {len(examples)} golden examples "
         f"(residency; evaluator=ViolationDetector).\n"
@@ -469,13 +482,24 @@ def run_residency_offline(dataset: Path, thresholds: dict[str, float]) -> EvalRe
         EvalMetricResult(
             metric=metric,
             score=round(agg[metric].mean, 4),
-            threshold=thresholds.get(metric, RESIDENCY_THRESHOLDS[metric]),
-            passed=round(agg[metric].mean, 4)
-            >= thresholds.get(metric, RESIDENCY_THRESHOLDS[metric]),
+            threshold=thresholds[metric],
+            passed=round(agg[metric].mean, 4) >= thresholds[metric],
         )
-        for metric in ("detection_recall", "precision", "citation_accuracy", "safety")
+        for metric in SCORED_RESIDENCY
     )
-    return EvalReport(dataset=str(dataset), results=results, n_examples=len(examples))
+    # detection_recall and precision are rates over the violation KINDS a reviewer labelled and
+    # the kinds the scanner claimed, not over the scan count.
+    expected_kinds = sum(len(example.expected_kinds) for example in examples)
+    assert_denominator_supports(
+        thresholds["detection_recall"], expected_kinds, metric="detection_recall"
+    )
+    return EvalReport(
+        dataset=str(dataset),
+        results=results,
+        n_examples=len(examples),
+        dataset_digest=dataset_digest(dataset),
+        evaluator="offline heuristic (no cloud creds)",
+    )
 
 
 # =========================================================================== #
