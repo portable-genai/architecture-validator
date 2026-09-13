@@ -54,6 +54,7 @@ resource "google_logging_project_sink" "audit_to_worm" {
 # Enable Data Access audit logs (DATA_READ) so every read of the policy bundle and the
 # audit store itself is itself audited (P-07). ADMIN_READ and DATA_WRITE are on by default.
 resource "google_project_iam_audit_config" "data_access" {
+  count   = var.manage_audit_config ? 1 : 0
   project = var.project_id
   service = "allServices"
 
