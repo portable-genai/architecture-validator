@@ -45,7 +45,6 @@ resource "google_logging_project_sink" "audit_to_worm" {
 
   filter = <<-EOT
     logName="projects/${var.project_id}/logs/architecture-validator-audit"
-    OR logName:"cloudaudit.googleapis.com"
   EOT
 
   unique_writer_identity = true
