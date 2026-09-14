@@ -13,7 +13,7 @@ resource "google_artifact_registry_repository" "images" {
   description   = "OPA policy service + validator app images (CMEK, in-region)."
   format        = "DOCKER"
 
-  kms_key_name = google_kms_crypto_key.validator.id
+  kms_key_name = one(google_kms_crypto_key.validator[*].id)
 
   depends_on = [
     google_project_service.required,

@@ -8,6 +8,7 @@
 #         global/multi-region key. Regional CMEK is what pins crypto material in-country.
 
 resource "google_kms_key_ring" "validator" {
+  count    = var.cmek_enabled ? 1 : 0
   name     = "architecture-validator-ring"
   location = var.region # asia-southeast1 — regional, in-country key material (P-03)
 
@@ -15,8 +16,9 @@ resource "google_kms_key_ring" "validator" {
 }
 
 resource "google_kms_crypto_key" "validator" {
+  count    = var.cmek_enabled ? 1 : 0
   name     = "architecture-validator-cmek"
-  key_ring = google_kms_key_ring.validator.id
+  key_ring = one(google_kms_key_ring.validator[*].id)
 
   purpose         = "ENCRYPT_DECRYPT"
   rotation_period = "7776000s" # 90 days — periodic rotation for key hygiene
@@ -41,21 +43,24 @@ data "google_project" "this" {
 
 # Artifact Registry service agent (CMEK on the OPA / app image repo).
 resource "google_kms_crypto_key_iam_member" "artifactregistry" {
-  crypto_key_id = google_kms_crypto_key.validator.id
+  count         = var.cmek_enabled ? 1 : 0
+  crypto_key_id = one(google_kms_crypto_key.validator[*].id)
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
   member        = "serviceAccount:service-${data.google_project.this.number}@gcp-sa-artifactregistry.iam.gserviceaccount.com"
 }
 
 # Vertex AI / Agent Runtime service agent.
 resource "google_kms_crypto_key_iam_member" "aiplatform" {
-  crypto_key_id = google_kms_crypto_key.validator.id
+  count         = var.cmek_enabled ? 1 : 0
+  crypto_key_id = one(google_kms_crypto_key.validator[*].id)
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
   member        = "serviceAccount:service-${data.google_project.this.number}@gcp-sa-aiplatform.iam.gserviceaccount.com"
 }
 
 # Cloud Logging service agent (CMEK on the WORM bucket).
 resource "google_kms_crypto_key_iam_member" "logging" {
-  crypto_key_id = google_kms_crypto_key.validator.id
+  count         = var.cmek_enabled ? 1 : 0
+  crypto_key_id = one(google_kms_crypto_key.validator[*].id)
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
   member        = "serviceAccount:service-${data.google_project.this.number}@gcp-sa-logging.iam.gserviceaccount.com"
 }
@@ -63,7 +68,8 @@ resource "google_kms_crypto_key_iam_member" "logging" {
 # Pub/Sub service agent: CMEK on the Cloud Asset Inventory feed topic, so the asset
 # feed backing the residency scan is CMEK-covered (P-09).
 resource "google_kms_crypto_key_iam_member" "pubsub" {
-  crypto_key_id = google_kms_crypto_key.validator.id
+  count         = var.cmek_enabled ? 1 : 0
+  crypto_key_id = one(google_kms_crypto_key.validator[*].id)
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
   member        = "serviceAccount:service-${data.google_project.this.number}@gcp-sa-pubsub.iam.gserviceaccount.com"
 }
