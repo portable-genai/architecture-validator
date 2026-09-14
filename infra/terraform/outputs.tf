@@ -7,7 +7,7 @@ output "region" {
 
 output "cmek_key" {
   description = "Regional CMEK crypto key id used across the stack (P-09)."
-  value       = google_kms_crypto_key.validator.id
+  value       = one(google_kms_crypto_key.validator[*].id)
 }
 
 output "worm_bucket" {
