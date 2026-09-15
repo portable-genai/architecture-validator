@@ -25,8 +25,11 @@ resource "google_logging_project_bucket_config" "worm_audit" {
   # IRREVERSIBLE — see WARNING banner above. WORM compliance requires this true.
   locked = true
 
-  cmek_settings {
-    kms_key_name = google_kms_crypto_key.validator.id
+  dynamic "cmek_settings" {
+    for_each = var.cmek_enabled ? [1] : []
+    content {
+      kms_key_name = one(google_kms_crypto_key.validator[*].id)
+    }
   }
 
   depends_on = [

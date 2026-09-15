@@ -15,7 +15,7 @@ resource "google_pubsub_topic" "asset_feed" {
   project = var.project_id
 
   # CMEK on the feed topic (P-09) — explicit, does not cascade.
-  kms_key_name = google_kms_crypto_key.validator.id
+  kms_key_name = one(google_kms_crypto_key.validator[*].id)
 
   depends_on = [
     google_project_service.required,
