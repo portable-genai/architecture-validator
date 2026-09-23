@@ -1,8 +1,8 @@
-# logging_worm.tf — WORM audit trail: locked Cloud Logging bucket + sink + audit config.
+# logging_worm.tf — WORM audit trail: lockable Cloud Logging bucket + sink + audit config.
 #
 # General Principle map:
 #   P-07 (immutable audit / WORM): the audit log is routed to a Cloud Logging bucket whose
-#         retention is var.retention_days (~7 years) and whose `locked = true` makes it
+#         retention is var.retention_days (~7 years) and whose lock (var.worm_locked) makes it
 #         Write-Once-Read-Many. The audit adapter (cloud_logging_audit) writes the
 #         validation verdicts here.
 #   P-03 (residency): bucket location is asia-southeast1.
@@ -10,20 +10,20 @@
 #
 # ############################################################################ #
 # # WARNING — LOCKING IS IRREVERSIBLE.                                        # #
-# # Setting `locked = true` below permanently prevents reducing retention or  # #
+# # Setting worm_locked = true permanently prevents reducing retention or     # #
 # # deleting this bucket for the full retention window. You CANNOT undo it.   # #
-# # To trial without locking, set locked = false (NOT compliant for prod).    # #
+# # No default: state worm_locked. false keeps it deletable (NOT for prod).   # #
 # ############################################################################ #
 
 resource "google_logging_project_bucket_config" "worm_audit" {
   project        = var.project_id
   location       = var.region                    # asia-southeast1 (P-03)
   bucket_id      = "architecture-validator-worm" # matches settings.yaml logging.bucket
-  description    = "WORM audit bucket for C3 architecture validator (locked, ~7y retention)."
+  description    = "WORM audit bucket for C3 architecture validator (lockable, ~7y retention)."
   retention_days = var.retention_days # 2557 (~7 years) by default
 
-  # IRREVERSIBLE — see WARNING banner above. WORM compliance requires this true.
-  locked = true
+  # IRREVERSIBLE when true (see the warning banner above), and never defaulted.
+  locked = var.worm_locked
 
   dynamic "cmek_settings" {
     for_each = var.cmek_enabled ? [1] : []
@@ -38,11 +38,11 @@ resource "google_logging_project_bucket_config" "worm_audit" {
   ]
 }
 
-# Route the audit log stream into the locked WORM bucket.
+# Route the audit log stream into the WORM audit bucket.
 resource "google_logging_project_sink" "audit_to_worm" {
   project     = var.project_id
   name        = "architecture-validator-audit-to-worm"
-  description = "Routes the architecture-validator-audit log to the locked WORM bucket."
+  description = "Routes the architecture-validator-audit log to the WORM audit bucket."
 
   destination = "logging.googleapis.com/${google_logging_project_bucket_config.worm_audit.id}"
 
