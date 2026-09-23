@@ -9,7 +9,7 @@ change-management and model-risk sign-off before any live use.
 
 ```bash
 # 1. Provision infra (review the plan; the WORM bucket lock is irreversible when
-#    locked = true, the default).
+#    worm_locked = true; it has no default, so state it).
 cd infra/terraform
 cp terraform.tfvars.example terraform.tfvars   # set project_id, org_id; pick a scenario (see below)
 terraform init -input=false && terraform plan
@@ -67,8 +67,8 @@ Rotation is transparent to the app; no restart is needed. The key has
 ## 4. Retention and the WORM lock
 
 The audit bucket retention is `retention_days` (default 2557, ~7 years, validated to be at
-least that) and the bucket is locked by default (`locked = true` in `logging_worm.tf`),
-which is **irreversible**. To trial without locking, set `locked = false` (not compliant
+least that) and the bucket is locked only when `worm_locked = true` is stated (no default),
+which is **irreversible**. To trial without locking, set `worm_locked = false` (not compliant
 for production). Only verdict summaries, never customer PII, are ever written to the audit
 log: `architecture-validator` processes project metadata, so it has no `agent-guardrail-gateway` dependency.
 

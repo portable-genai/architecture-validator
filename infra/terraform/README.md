@@ -35,7 +35,7 @@ falls back to the in-process deterministic evaluator (P-10).
 
 ## Irreversible actions
 
-- `logging_worm.tf` sets `locked = true` on the audit bucket. This **cannot be undone** and
+- `worm_locked = true` locks the audit bucket (`logging_worm.tf`); it has no default. This **cannot be undone** and
   prevents reducing retention or deleting the bucket for the full window. Confirm
   `retention_days` before `apply`.
 - `kms.tf` sets `prevent_destroy` on the CMEK key; a destroyed key strands all encrypted data.
