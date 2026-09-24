@@ -38,6 +38,7 @@ from ..domain.services import ValidationService
 from ..envread import boolean_setting, read_env_setting, setting_or_default
 from ..ports.identity import VERIFIED
 from . import deps
+from .disclosure import disclose
 from .schemas import (
     AgentCardModel,
     HealthResponse,
@@ -233,6 +234,7 @@ def validate(
     request: ValidateRequest,
     principal: CurrentPrincipal,
     service: Annotated[ValidationService, Depends(deps.get_validation_service)],
+    routing: deps.RequestReviewRouter,
 ) -> ValidationReportResponse:
     """Validate a project submission against the 12 General Principles at intake (R6).
 
@@ -243,7 +245,7 @@ def validate(
     report = service.validate(
         request.submission.to_domain(), actor=principal.actor, tenant=principal.tenant
     )
-    return ValidationReportResponse.from_domain(report)
+    return disclose(ValidationReportResponse.from_domain(report), routing=routing)
 
 
 @app.get("/principles", response_model=PrinciplesResponse, tags=["principles"])
@@ -257,6 +259,7 @@ def scan(
     request: ScanRequest,
     principal: CurrentPrincipal,
     service: Annotated[ResidencyScanService, Depends(deps.get_scan_service)],
+    routing: deps.RequestReviewRouter,
 ) -> ResidencyScanResponse:
     """Scan a target / inline plan / resource list and return a PASS/FAIL ResidencyScan.
 
@@ -285,7 +288,7 @@ def scan(
         is_scope = target.startswith(("projects/", "folders/", "organizations/"))
         action = "scan_project" if is_scope else "scan_iac"
         result = service.scan_target(target, actor, action=action)
-    return ResidencyScanResponse.from_domain(result)
+    return disclose(ResidencyScanResponse.from_domain(result), routing=routing)
 
 
 @app.get("/policy", response_model=ResidencyPolicyModel, tags=["scan"])

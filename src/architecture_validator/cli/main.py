@@ -204,13 +204,23 @@ def validate(
 ) -> None:
     """Validate a project submission against the 12 General Principles at intake."""
 
+    from ..adapters.controls import RecordingReviewRouter
+
+    routing: RecordingReviewRouter | None = None
+
     def _do() -> ValidationReport:
+        nonlocal routing
         sub = _load_submission(submission)
-        svc = _deps().build_validation_service(_container())
+        container = _container()
+        routing = RecordingReviewRouter(container.review_router)
+        svc = _deps().build_validation_service(container, review_router=routing)
         return svc.validate(sub, actor=_CLI_ACTOR)
 
     report = _run("validate", _do)
     _print_report(report)
+    if routing is not None:
+        # Rule R8 on the CLI path too: say where the escalation went, not only that it exists.
+        typer.echo(f"human review hand-off: {routing.outcome.value}")
     if not report.passed:
         raise typer.Exit(0)  # a FAIL verdict is a successful run, not a CLI error
 

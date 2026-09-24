@@ -35,6 +35,7 @@ class LocalScanResidencyAdapter:
         if self._service is None:
             from ...domain.residency.detector import ViolationDetector
             from ...domain.residency.scan_service import ResidencyScanService
+            from ..controls import RecordingReviewRouter
 
             container = build_container(self._settings)
             detector = ViolationDetector(self._settings.build_residency_policy())
@@ -44,7 +45,9 @@ class LocalScanResidencyAdapter:
                 llm=container.llm,
                 tracer=container.tracer,
                 audit=container.audit,
-                review_router=container.review_router,
+                # The nested scan's hand-off returns nothing to a user, but a failure is still
+                # logged by exception type rather than swallowed.
+                review_router=RecordingReviewRouter(container.review_router),
             )
         return self._service
 

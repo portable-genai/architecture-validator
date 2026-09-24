@@ -13,7 +13,7 @@ domain models, the ports, and the orchestration services — never on a concrete
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -24,6 +24,10 @@ from ..domain.serialization import to_jsonable
 # --------------------------------------------------------------------------- #
 # Shared citation projection
 # --------------------------------------------------------------------------- #
+
+
+#: The four outcomes of a human-review hand-off, as the API reports them.
+ReviewRoutingValue = Literal["routed", "failed", "off", "not_required"]
 
 
 class CitationModel(BaseModel):
@@ -151,6 +155,8 @@ class ValidationReportResponse(BaseModel):
     passed: bool = False
     requires_human_review: bool = True
     generated_at: str = ""
+    #: What happened to the human-review hand-off: routed, failed, off or not_required.
+    review_routing: ReviewRoutingValue = "not_required"
 
     @classmethod
     def from_domain(cls, report: m.ValidationReport) -> ValidationReportResponse:
@@ -354,6 +360,8 @@ class ResidencyScanResponse(BaseModel):
     generated_at: str
     verdict: ScanVerdictModel
     violations: list[ResidencyViolationModel] = Field(default_factory=list)
+    #: What happened to the human-review hand-off: routed, failed, off or not_required.
+    review_routing: ReviewRoutingValue = "not_required"
 
     @classmethod
     def from_domain(cls, scan: rm.ResidencyScan) -> ResidencyScanResponse:

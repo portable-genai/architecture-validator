@@ -14,7 +14,11 @@ knows which ports each service needs.
 from __future__ import annotations
 
 from functools import lru_cache
+from typing import Annotated, Any
 
+from fastapi import Depends
+
+from ..adapters.controls import RecordingReviewRouter
 from ..config import Container, Settings, build_container
 from ..domain.hitl import ReviewPolicy
 from ..domain.models import Severity
@@ -40,9 +44,23 @@ def get_settings() -> Settings:
 # --------------------------------------------------------------------------- #
 
 
-def get_validation_service() -> ValidationService:
+def get_request_review_router() -> RecordingReviewRouter:
+    """The review router for ONE request, wrapped so the response reports the hand-off.
+
+    FastAPI resolves a dependency once per request, so the route and the service it builds
+    receive the same wrapper and the route reads what the service's hand-off did.
+    """
+    return RecordingReviewRouter(get_container().review_router)
+
+
+#: Injected by FastAPI; ``None`` when a getter is called directly (the MCP server may), which
+#: binds the container's router unwrapped unless the caller passes its own wrapper.
+RequestReviewRouter = Annotated[RecordingReviewRouter | None, Depends(get_request_review_router)]
+
+
+def get_validation_service(review_router: RequestReviewRouter = None) -> ValidationService:
     """Assemble the ValidationService from the process-wide Container (SPEC §5)."""
-    return build_validation_service(get_container())
+    return build_validation_service(get_container(), review_router=review_router)
 
 
 def get_injection_service() -> RequirementInjectionService:
@@ -50,9 +68,9 @@ def get_injection_service() -> RequirementInjectionService:
     return build_injection_service(get_container())
 
 
-def get_scan_service() -> ResidencyScanService:
+def get_scan_service(review_router: RequestReviewRouter = None) -> ResidencyScanService:
     """Assemble the ResidencyScanService from the process-wide Container."""
-    return build_scan_service(get_container())
+    return build_scan_service(get_container(), review_router=review_router)
 
 
 # --------------------------------------------------------------------------- #
@@ -65,8 +83,14 @@ def get_scan_service() -> ResidencyScanService:
 # --------------------------------------------------------------------------- #
 
 
-def build_validation_service(container: Container) -> ValidationService:
-    """Assemble a :class:`ValidationService` from an explicit Container."""
+def build_validation_service(
+    container: Container, *, review_router: Any = None
+) -> ValidationService:
+    """Assemble a :class:`ValidationService` from an explicit Container.
+
+    ``review_router`` replaces the container's for one call: a caller that reports the
+    hand-off passes a :class:`RecordingReviewRouter` wrapping the container's router.
+    """
     return ValidationService(
         policy_engine=container.policy_engine,
         knowledge_base=container.knowledge_base,
@@ -82,7 +106,7 @@ def build_validation_service(container: Container) -> ValidationService:
             ),
         ),
         allowed_regions=container.settings.policy.allowed_regions,
-        review_router=container.review_router,
+        review_router=review_router or container.review_router,
     )
 
 
@@ -91,7 +115,7 @@ def build_injection_service(container: Container) -> RequirementInjectionService
     return RequirementInjectionService(llm=container.llm, tracer=container.tracer)
 
 
-def build_scan_service(container: Container) -> ResidencyScanService:
+def build_scan_service(container: Container, *, review_router: Any = None) -> ResidencyScanService:
     """Assemble a :class:`ResidencyScanService` from an explicit Container.
 
     The detector is built from the container's configured ResidencyPolicy so the gate is
@@ -105,7 +129,7 @@ def build_scan_service(container: Container) -> ResidencyScanService:
         llm=container.llm,
         tracer=container.tracer,
         audit=container.audit,
-        review_router=container.review_router,
+        review_router=review_router or container.review_router,
     )
 
 
