@@ -18,9 +18,11 @@ from typing import Any
 
 from hex_service_kit import mcpserve
 
+from ..adapters.controls import RecordingReviewRouter
 from ..api import deps
 from ..domain.models import ProjectSubmission
 from ..domain.principles import all_principles
+from ..domain.serialization import to_jsonable
 
 #: The tools this module answers, as data, so a test can hold it against the catalog without
 #: starting a server or importing the MCP SDK.
@@ -52,18 +54,32 @@ def _submission(raw: Any) -> ProjectSubmission:
 
 
 def build_handlers(actor: str) -> dict[str, mcpserve.Handler]:
-    """Bind each declared tool to the domain service that already performs it."""
+    """Bind each declared tool to the domain service that already performs it.
+
+    Both validating tools hand the report to the review router, so each goes through
+    :class:`RecordingReviewRouter`: a failed hand-off is logged by exception type rather than
+    swallowed. ``validate_project`` returns the report and so also says what happened to the
+    hand-off (``review_routing``); ``inject_requirements`` returns requirements, which have no
+    place for it.
+    """
 
     def validate_project(**arguments: Any) -> Any:
-        return deps.get_validation_service().validate(
+        routing = RecordingReviewRouter(deps.get_container().review_router)
+        report = deps.get_validation_service(review_router=routing).validate(
             _submission(arguments.get("submission")), actor=actor
         )
+        payload: dict[str, Any] = to_jsonable(report)
+        payload["review_routing"] = routing.outcome.value
+        return payload
 
     def inject_requirements(**arguments: Any) -> Any:
         submission = _submission(arguments.get("submission"))
         # Injection reads the findings, so the validation runs first rather than the caller
         # being asked to supply findings it has no way to compute.
-        report = deps.get_validation_service().validate(submission, actor=actor)
+        routing = RecordingReviewRouter(deps.get_container().review_router)
+        report = deps.get_validation_service(review_router=routing).validate(
+            submission, actor=actor
+        )
         return deps.get_injection_service().inject(submission, list(report.findings))
 
     def list_principles(**_: Any) -> Any:

@@ -72,7 +72,12 @@ export interface ValidationReport {
   passed: boolean;
   requires_human_review: boolean;
   generated_at: string;
+  /** What happened to the hand-off to the human-review console (the API reports it). */
+  review_routing?: ReviewRouting;
 }
+
+/** The four outcomes of a human-review hand-off, as the API reports them. */
+export type ReviewRouting = "routed" | "failed" | "off" | "not_required";
 
 export const STATUS_TONE: Record<CheckStatus, string> = {
   PASS: "text-emerald-600 bg-emerald-50 ring-emerald-200",

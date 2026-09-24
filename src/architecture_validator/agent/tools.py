@@ -68,11 +68,17 @@ def validate_project(
         has_exit_plan, attributes).
       actor: authenticated user / service identity the request is made for.
     """
+    from ..adapters.controls import RecordingReviewRouter
     from ..api.deps import build_validation_service
     from ..domain.serialization import to_jsonable
 
-    service = build_validation_service(_container(settings))
-    return to_jsonable(service.validate(_to_submission(submission), actor))
+    container = _container(settings)
+    routing = RecordingReviewRouter(container.review_router)
+    service = build_validation_service(container, review_router=routing)
+    payload: dict[str, Any] = to_jsonable(service.validate(_to_submission(submission), actor))
+    # The agent is told whether a report that needs a reviewer is actually queued for one.
+    payload["review_routing"] = routing.outcome.value
+    return payload
 
 
 def inject_requirements(

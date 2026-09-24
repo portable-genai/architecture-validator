@@ -50,6 +50,16 @@ UNAUTHENTICATED_ROUTES: tuple[str, ...] = (
 )
 
 
+@pytest.fixture(autouse=True)
+def _managed_deployment_names_its_console(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A managed process with review routing on refuses to boot without a console.
+
+    These tests build the app under the managed profile to exercise identity, not routing, so
+    they name a console the way any managed deployment must.
+    """
+    monkeypatch.setenv("HUMAN_REVIEW_URL", "https://review.example.test")
+
+
 @pytest.fixture
 def rebuilt_app(monkeypatch: pytest.MonkeyPatch) -> Iterator[ModuleType]:
     """Re-import the API module under a chosen profile, and restore it on teardown.

@@ -52,7 +52,8 @@ governance ruleset.
 Rule R8 routes any non-clean `ValidationReport` to the `human-review-console` Human-Review and Maker-Checker
 Console through the shared `review-kit` client (`adapters/*/review_router.py`). In a
 fork, `local` enqueues to an in-memory outbox (offline), `gcp`/`platform` submit over S2S to
-`HUMAN_REVIEW_URL`, and `onprem` is the fail-fast placeholder. You wire your `human-review-console`
+`HUMAN_REVIEW_URL` (and refuse to boot without it while `ARCH_VALIDATOR_REVIEW_ROUTING` is on),
+and `onprem` is the fail-fast placeholder. You wire your `human-review-console`
 endpoint; you do not re-implement the console.
 
 ### Does the CI run for my fork out of the box?

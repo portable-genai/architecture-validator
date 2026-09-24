@@ -137,12 +137,22 @@ def scan(
     target = targets[0]
     action = "scan_project" if project else "scan_iac"
 
+    from ..adapters.controls import RecordingReviewRouter
+
+    routing: RecordingReviewRouter | None = None
+
     def _do() -> ResidencyScan:
-        svc = _deps().build_scan_service(_container())
+        nonlocal routing
+        container = _container()
+        routing = RecordingReviewRouter(container.review_router)
+        svc = _deps().build_scan_service(container, review_router=routing)
         return svc.scan_target(target, actor=_CLI_ACTOR, action=action)
 
     scan_result = _run("scan", _do)
     _print_scan(scan_result)
+    if routing is not None:
+        # Rule R8 on the CLI path too: say where the escalation went, not only that it exists.
+        typer.echo(f"human review hand-off: {routing.outcome.value}")
     raise typer.Exit(scan_result.verdict.exit_code)
 
 
