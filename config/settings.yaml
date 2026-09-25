@@ -37,8 +37,6 @@ models:
   location: ${ARCH_VALIDATOR_MODEL_LOCATION:-asia-southeast1}
   reasoning: gemini-3.5-flash          # GA — drafts remediation / injected NFRs (thinking=high)
   triage: gemini-3.5-flash        # GA — routing / cheap classification
-  hard_reasoning: gemini-3.5-flash  # in-region SG commitment; no Gemini 3 PRO tier serves any location
-  use_hard_reasoning: false
 
 policy:
   opa_url: ${ARCH_VALIDATOR_OPA_URL:-}    # OPA REST service (Cloud Run) for the rego bundle

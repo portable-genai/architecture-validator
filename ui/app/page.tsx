@@ -85,7 +85,9 @@ export default function Page() {
   const embed = process.env.NEXT_PUBLIC_EMBED === "1";
 
   return (
-    <div className={embed ? "bg-ink-50" : "min-h-screen bg-ink-50"}>
+    // Embedded, the page starts below the model pills (fixed at the top right) rather than
+    // under them; standalone, the TopBar does the same.
+    <div className={embed ? "bg-ink-50 pt-4" : "min-h-screen bg-ink-50"}>
       {embed ? null : <TopBar health={health} profile={profile} />}
       <main className="mx-auto grid max-w-6xl gap-4 p-4 lg:grid-cols-[22rem_minmax(0,1fr)]">
         <aside className="space-y-4">
@@ -160,7 +162,9 @@ function TopBar({
   const label =
     health === "up" ? "backend up" : health === "down" ? "backend down" : "checking…";
   return (
-    <header className="flex items-center justify-between border-b border-ink-200 bg-white px-4 py-2.5">
+    // `pt-8`: the model pills sit fixed at the top right, above the status cluster on the right
+    // of this bar, so the bar's content starts below them instead of beneath them.
+    <header className="flex items-center justify-between border-b border-ink-200 bg-white px-4 pb-2.5 pt-8">
       <div className="flex items-center gap-2.5">
         <img
           src="/logo.jpg"

@@ -76,8 +76,9 @@ def build_root_agent(settings: Settings | None = None) -> LlmAgent:
 
     tools: list[Any] = list(build_function_tools())
 
+    # No temperature: the agent narrates and routes to the function tools, and every verdict
+    # comes from the deterministic policy engine behind them, so its sampling is left free.
     generate_content_config = types.GenerateContentConfig(
-        temperature=0.2,
         thinking_config=types.ThinkingConfig(thinking_budget=-1),
     )
 

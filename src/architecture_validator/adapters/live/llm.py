@@ -5,7 +5,8 @@ The ``live`` profile's model port. It builds the same conversation the Gemini ad
 :class:`hex_service_kit.localmodel.LocalModelClient`, which owns the endpoint, the model id,
 the structured-output contract (schema in the prompt, validated and retried) and the start
 recipe a failure message carries. ``LOCAL_MODEL_URL`` and ``LOCAL_MODEL`` choose the server and
-model, read in three states by the kit.
+model, read in three states by the kit. The kit client notes the model that answered for the
+console's model pill itself, and sends no temperature when the request leaves it ``None``.
 
 The model drafts requirement and remediation prose; the policy engine owns every verdict. A
 server that does not answer maps to :class:`ModelUnavailableError` and an answer that never

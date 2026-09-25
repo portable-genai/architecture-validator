@@ -7,9 +7,14 @@ Reasoning uses ``gemini-3.5-flash`` (thinking=high) and triage/classification us
 ``gemini-2.0-flash`` are never used.
 
 The adapter maps the domain :class:`LlmRequest` onto ``client.models.generate_content``
-(system instruction, temperature, max-output-tokens, a :class:`ThinkingConfig` mapped from
-``request.thinking``, and structured-output config when a response schema is supplied),
-and maps ``usage_metadata`` back onto :class:`TokenUsage`.
+(system instruction, temperature when the call site pinned one, max-output-tokens, a
+:class:`ThinkingConfig` mapped from ``request.thinking``, and structured-output config when a
+response schema is supplied), and maps ``usage_metadata`` back onto :class:`TokenUsage`.
+
+After every successful call it notes the model id it passed as ``model=`` with
+:func:`hex_service_kit.provenance.note_model`, so the console's model pill names the model that
+answered. No call here attaches an online search tool (retrieval is the governed File Search
+KB, a separate port), so nothing here notes a search.
 
 All Google Cloud / GenAI SDK imports are lazy so the on-prem / test profile imports this
 module without ``google-genai`` installed.
@@ -18,6 +23,8 @@ module without ``google-genai`` installed.
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
+
+from hex_service_kit import provenance
 
 from ...config import Settings
 from ...domain.models import LlmRequest, LlmResponse, ThinkingLevel, TokenUsage
@@ -65,6 +72,7 @@ class GeminiLLMAdapter:
             contents=contents,
             config=config,
         )
+        provenance.note_model(model)
 
         return LlmResponse(
             text=getattr(response, "text", "") or "",
@@ -77,6 +85,7 @@ class GeminiLLMAdapter:
         from google.genai import types
 
         client = self._get_client()
+        model = self._models.triage
         label_list = ", ".join(labels)
         prompt = (
             "Classify the text into exactly one of these labels: "
@@ -85,8 +94,9 @@ class GeminiLLMAdapter:
             f"Text:\n{text}"
         )
         response = client.models.generate_content(
-            model=self._models.triage,
+            model=model,
             contents=[types.Content(role="user", parts=[types.Part.from_text(text=prompt)])],
+            # Pinned: a classification, whose label is compared against a fixed set.
             config=types.GenerateContentConfig(
                 temperature=0.0,
                 max_output_tokens=16,
@@ -95,6 +105,7 @@ class GeminiLLMAdapter:
                 ),
             ),
         )
+        provenance.note_model(model)
         raw = (getattr(response, "text", "") or "").strip()
         return self._match_label(raw, labels)
 
@@ -116,12 +127,15 @@ class GeminiLLMAdapter:
         from google.genai import types
 
         kwargs: dict[str, Any] = {
-            "temperature": request.temperature,
             "max_output_tokens": request.max_output_tokens,
             "thinking_config": types.ThinkingConfig(
                 thinking_level=self._thinking_level(request.thinking, types)
             ),
         }
+        # Omitted, not defaulted, when the call site left it free: the model then samples at its
+        # own default, and a model that rejects the parameter is never sent one.
+        if request.temperature is not None:
+            kwargs["temperature"] = request.temperature
         if request.system_instruction:
             kwargs["system_instruction"] = request.system_instruction
         if request.response_schema is not None:
