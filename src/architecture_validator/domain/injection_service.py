@@ -107,6 +107,10 @@ class RequirementInjectionService:
             ),
             model=None,
             response_schema=_INJECTION_SCHEMA,
+            # Free: this drafts requirement prose. The verdict and the set of unmet principles
+            # are already fixed by the policy engine, and an item naming a principle outside
+            # that set is dropped below, so sampling here changes wording, never an outcome.
+            temperature=None,
         )
         try:
             response = self._llm.generate(request)

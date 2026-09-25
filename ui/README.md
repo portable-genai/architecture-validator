@@ -24,6 +24,12 @@ bypasses the gate: it only renders what `/validate` returns.
 - `app/page.tsx`: the submission form + report view.
 - `app/layout.tsx`: the shell. Sets `export const dynamic = "force-dynamic"`, which the nonce CSP
   REQUIRES; see below.
+- `app/ModelPills.tsx`: two small pills fixed at the top right of every page, in both modes: the
+  model that ANSWERED the last request (the service's `X-Answered-By` header; before any answer,
+  the configured `generator_model` from `/healthz`, dimmed) and `Search` while that answer used an
+  online search tool (`X-Search-Used`).
+- `lib/answer-provenance.mjs`: the one `window.fetch` wrapper the pills read those two headers
+  through, scoped to `NEXT_PUBLIC_API_BASE`; `tests/answer-provenance.test.mjs` covers it.
 - `lib/types.ts`: TypeScript mirrors of the `architecture-validator` domain dataclasses (`to_jsonable` shapes).
 - `lib/api.ts`: typed fetch client for `/validate`, `/principles`, `/healthz`.
 - `lib/csp.mjs`: the ONE Content-Security-Policy module. Builds the policy, resolves

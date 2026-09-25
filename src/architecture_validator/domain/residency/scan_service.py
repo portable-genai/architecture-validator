@@ -230,6 +230,9 @@ class ResidencyScanService:
             user_content=user,
             model=None,
             response_schema=_REMEDIATION_SCHEMA,
+            # Free: a remediation narrative. The violations and the verdict are deterministic
+            # and computed before this call; the prose never feeds a check.
+            temperature=None,
         )
         try:
             response = self._llm.generate(request)

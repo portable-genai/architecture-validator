@@ -8,6 +8,10 @@ element per unmet principle, citing that principle id via ``used_source_ids`` (s
 service's used_source_ids -> Citation mapping genuinely runs). It never decides a verdict.
 There is no Google emulator for Gemini, so this path is unconditional.
 
+Every call notes :data:`~architecture_validator.config.LOCAL_STUB_MODEL` with
+:func:`hex_service_kit.provenance.note_model`, the same string ``generator_model`` reports under
+``local``, so the console's model pill names the stub that answered and never a managed model.
+
 The schema-driven ``FakeLLM`` is a real, registered adapter rather than a test fixture, so
 the in-memory implementation lives once under ``adapters/local`` and drives both the offline
 tests and the CLI.
@@ -19,7 +23,9 @@ import json
 import re
 from typing import Any
 
-from ...config import Settings
+from hex_service_kit import provenance
+
+from ...config import LOCAL_STUB_MODEL, Settings
 from ...domain.models import LlmRequest, LlmResponse, TokenUsage
 
 # The requirement-injection prompt renders each unmet finding as
@@ -61,6 +67,7 @@ class LocalDeterministicLLMAdapter:
     def generate(self, request: LlmRequest) -> LlmResponse:
         self.requests.append(request)
         body = self._body_for_schema(request.response_schema, self._user_content(request))
+        provenance.note_model(LOCAL_STUB_MODEL)
         return LlmResponse(
             text=json.dumps(body),
             usage=TokenUsage(input_tokens=128, output_tokens=64, thinking_tokens=32),
@@ -71,6 +78,7 @@ class LocalDeterministicLLMAdapter:
     def classify(self, text: str, labels: list[str]) -> str:
         # Deterministic triage: first label (services use this only for routing).
         self.classify_calls.append((text, labels))
+        provenance.note_model(LOCAL_STUB_MODEL)
         return labels[0] if labels else ""
 
     # ------------------------------------------------------------------ #

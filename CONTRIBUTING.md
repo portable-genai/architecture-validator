@@ -41,6 +41,17 @@ suite on the onprem profile.
 - **Every adapter is `Adapter(settings: Settings)`.** Add new ports with a `gcp` and an
   `onprem` binding in `config/settings.yaml`, then extend `tests/contract` accordingly.
 - **No third-party OSS product is named in the on-prem stubs.** They are migration targets.
+- **A model adapter notes what answered, and samples per call.** After a successful call the
+  `gcp` adapter calls `hex_service_kit.provenance.note_model(<the model id it actually called>)`,
+  and `provenance.note_search()` only when an online search tool was attached to THAT call; the
+  `local` stub notes `config.LOCAL_STUB_MODEL`; the `live` adapter needs nothing, because the kit
+  client notes itself. `api/app.py` turns the notes into `X-Answered-By` / `X-Search-Used`, and
+  the console's pills show them. `LlmRequest.temperature` is `float | None = None` and an adapter
+  OMITS it when `None` (some models reject the parameter, so free means absent, never `1.0`). Pin
+  `0.0` only where the output is extracted, classified, scored or compared; leave drafting and
+  narration free. There is no second, harder model a flag can swap in: `generator_model` must be
+  the model the adapter calls. Covered by `tests/unit/test_answer_provenance.py` and
+  `tests/unit/test_sampling_per_call.py`.
 
 ### Extension touch lists
 
