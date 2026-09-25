@@ -18,7 +18,7 @@ requirements at intake.
 | Catalog id | `architecture-validator` |
 | Package | `src/architecture_validator/` |
 | Profile variable | `ARCH_VALIDATOR_PROFILE` |
-| Adapter families | `gcp`, `local`, `onprem`, `platform` |
+| Adapter families | `gcp`, `local`, `live` (local plus the shared local model on `llm`), `onprem`, `platform` |
 | Gate | `make check` |
 
 That variable is read in one module and resolved in three states: unset is no choice,

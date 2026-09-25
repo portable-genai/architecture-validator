@@ -42,3 +42,15 @@ class ScanTargetError(ValidatorError):
     JSON document is a hard error for the residency scan: the CI gate must fail loudly
     rather than emit a misleading PASS over zero scanned resources.
     """
+
+
+class ModelUnavailableError(ValidatorError):
+    """Raised when the model behind the LLM port did not answer.
+
+    The message says how to bring the model back. The drafting callers degrade to their
+    deterministic fallback on it, exactly as they do on a managed-model failure.
+    """
+
+
+class ModelOutputError(ValidatorError):
+    """Raised when the model answered but no attempt satisfied the requested schema."""

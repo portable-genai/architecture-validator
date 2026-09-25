@@ -10,6 +10,11 @@ import { FindingsTable } from "@/components/FindingsTable";
 import { InjectedRequirements } from "@/components/InjectedRequirements";
 import { Panel } from "@/components/ui";
 
+// The profiles that serve seeded dev personas: local, and live (local plus a local model).
+function isLaptopProfile(profile: string | null | undefined): boolean {
+  return profile === "local" || profile === "live";
+}
+
 export default function Page() {
   const [report, setReport] = useState<ValidationReport | null>(null);
   const [busy, setBusy] = useState(false);
@@ -35,10 +40,11 @@ export default function Page() {
     };
   }, []);
 
-  // Demo identity picker: local profile only (no IdP). Loads the seeded personas and
+  // Demo identity picker: laptop profiles only (local, and live, which is local with a local
+  // model answering; no IdP). Loads the seeded personas and
   // default-selects the first so per-user authorization is demoable offline.
   useEffect(() => {
-    if (profile !== "local") return;
+    if (!isLaptopProfile(profile)) return;
     let active = true;
     void (async () => {
       try {
@@ -83,8 +89,8 @@ export default function Page() {
       {embed ? null : <TopBar health={health} profile={profile} />}
       <main className="mx-auto grid max-w-6xl gap-4 p-4 lg:grid-cols-[22rem_minmax(0,1fr)]">
         <aside className="space-y-4">
-          {profile === "local" && personas.length > 0 ? (
-            <Panel title="Demo identity" subtitle="local profile · no IdP · X-Dev-Persona">
+          {isLaptopProfile(profile) && personas.length > 0 ? (
+            <Panel title="Demo identity" subtitle="laptop profile · no IdP · X-Dev-Persona">
               <label className="block text-sm">
                 <span className="text-ink-500">Persona</span>
                 <select

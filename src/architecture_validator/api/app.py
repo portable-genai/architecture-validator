@@ -144,8 +144,11 @@ def _cors_origins() -> list[str]:
         [origin.strip() for origin in configured.split(",") if origin.strip()],
         "ARCH_VALIDATOR_CORS_ORIGINS",
     )
+    settings = deps.get_settings()
+    # ``live`` is a laptop profile like ``local`` and gets the same dev origins; the commons
+    # grants them to exactly one profile string, so a deliberate laptop run is named ``local``.
     return cors_allowlist(
-        deps.get_settings().exposure_profile,
+        "local" if settings.laptop else settings.exposure_profile,
         origins_env="ARCH_VALIDATOR_CORS_ORIGINS",
         dev_origins=tuple(_DEV_ORIGINS),
     )
