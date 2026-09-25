@@ -2,10 +2,13 @@
 #
 # Switch the entire managed stack to on-prem by setting ARCH_VALIDATOR_PROFILE=onprem
 # (or profile: onprem below). Nothing in src/architecture_validator/domain changes.
+# ARCH_VALIDATOR_PROFILE=live is local with ONE change: the llm port calls the shared local
+# open-weight model (hex_service_kit.localmodel; LOCAL_MODEL_URL, LOCAL_MODEL) instead of the
+# deterministic stub. Every other port binds the same adapter as local.
 
 project_id: ${GOOGLE_CLOUD_PROJECT:-your-gcp-project}
 region: asia-southeast1                # Singapore — MAS/HKMA/APRA/FSA data residency
-# local (SDK-free) | gcp | platform | onprem. Deliberately NO fallback value: an empty
+# local (SDK-free) | live | gcp | platform | onprem. Deliberately NO fallback value: an empty
 # result means nobody chose, which the loader keeps distinct from a chosen `local` so the
 # relaxations (the CORS dev-origin fallback, the no-auth seeded personas) stay off. Set
 # ARCH_VALIDATOR_PROFILE, or hard-code a profile here for a reviewed deployment; prod
@@ -128,20 +131,24 @@ adapters:
     gcp: architecture_validator.adapters.gcp.iap_identity:IapIdentityAdapter
     platform: architecture_validator.adapters.gcp.iap_identity:IapIdentityAdapter
     local: architecture_validator.adapters.local.identity:LocalPersonaIdentityAdapter
+    live: architecture_validator.adapters.local.identity:LocalPersonaIdentityAdapter
     onprem: architecture_validator.adapters.onprem.identity:OnPremIdentityAdapter
   policy_engine:
     gcp: architecture_validator.adapters.gcp.opa_policy:OpaPolicyAdapter
     local: architecture_validator.adapters.local.policy:LocalPolicyEngineAdapter
+    live: architecture_validator.adapters.local.policy:LocalPolicyEngineAdapter
     platform: architecture_validator.adapters.gcp.opa_policy:OpaPolicyAdapter
     onprem: architecture_validator.adapters.onprem.policy:OnPremPolicyAdapter
   knowledge_base:
     gcp: architecture_validator.adapters.gcp.file_search_kb:FileSearchKnowledgeBaseAdapter
     local: architecture_validator.adapters.local.knowledge:LocalFtsKnowledgeBaseAdapter
+    live: architecture_validator.adapters.local.knowledge:LocalFtsKnowledgeBaseAdapter
     platform: architecture_validator.adapters.platform.remote_knowledge:RemoteKnowledgeBaseAdapter
     onprem: architecture_validator.adapters.onprem.knowledge:OnPremKnowledgeBaseAdapter
   control_mapping:
     gcp: architecture_validator.adapters.platform.remote_control_mapping:RemoteControlMappingAdapter
     local: architecture_validator.adapters.local.control_mapping:LocalControlMappingAdapter
+    live: architecture_validator.adapters.local.control_mapping:LocalControlMappingAdapter
     platform: architecture_validator.adapters.platform.remote_control_mapping:RemoteControlMappingAdapter
     onprem: architecture_validator.adapters.onprem.control_mapping:OnPremControlMappingAdapter
   # The residency scan runs inside this service, so the residency port resolves IN-PROCESS
@@ -149,6 +156,7 @@ adapters:
   # deployments that run the residency scanner as a separate service.
   residency:
     local: architecture_validator.adapters.local.scan_residency:LocalScanResidencyAdapter
+    live: architecture_validator.adapters.local.scan_residency:LocalScanResidencyAdapter
     onprem: architecture_validator.adapters.local.scan_residency:LocalScanResidencyAdapter
     gcp: architecture_validator.adapters.local.scan_residency:LocalScanResidencyAdapter
     platform: architecture_validator.adapters.platform.remote_residency:RemoteResidencyAdapter
@@ -160,36 +168,43 @@ adapters:
     gcp: architecture_validator.adapters.gcp.cloud_asset_scanner:CloudAssetInventoryScannerAdapter
     platform: architecture_validator.adapters.gcp.cloud_asset_scanner:CloudAssetInventoryScannerAdapter
     local: architecture_validator.adapters.local.scanner:LocalSeededScannerAdapter
+    live: architecture_validator.adapters.local.scanner:LocalSeededScannerAdapter
     onprem: architecture_validator.adapters.onprem.scanner:OnPremScannerAdapter
   llm:
     gcp: architecture_validator.adapters.gcp.gemini_llm:GeminiLLMAdapter
     platform: architecture_validator.adapters.gcp.gemini_llm:GeminiLLMAdapter
     local: architecture_validator.adapters.local.llm:LocalDeterministicLLMAdapter
+    live: architecture_validator.adapters.live.llm:LocalModelLLMAdapter
     onprem: architecture_validator.adapters.onprem.llm:OnPremLLMAdapter
   audit:
     gcp: architecture_validator.adapters.gcp.cloud_logging_audit:CloudLoggingAuditAdapter
     local: architecture_validator.adapters.local.audit:LocalAppendOnlyAuditAdapter
+    live: architecture_validator.adapters.local.audit:LocalAppendOnlyAuditAdapter
     platform: architecture_validator.adapters.platform.remote_audit:RemoteAuditAdapter
     onprem: architecture_validator.adapters.onprem.audit:OnPremAuditAdapter
   tracer:
     gcp: architecture_validator.adapters.gcp.cloud_trace_tracer:CloudTraceTracerAdapter
     platform: architecture_validator.adapters.gcp.cloud_trace_tracer:CloudTraceTracerAdapter
     local: architecture_validator.adapters.local.tracer:LocalNoopTracerAdapter
+    live: architecture_validator.adapters.local.tracer:LocalNoopTracerAdapter
     onprem: architecture_validator.adapters.onprem.tracer:OnPremTracerAdapter
   evaluation:
     gcp: architecture_validator.adapters.gcp.genai_eval:GenAiEvalAdapter
     local: architecture_validator.adapters.local.evaluation:LocalOfflineEvalAdapter
+    live: architecture_validator.adapters.local.evaluation:LocalOfflineEvalAdapter
     onprem: architecture_validator.adapters.onprem.evaluation:OnPremEvalAdapter
     platform: architecture_validator.adapters.platform.remote_evaluation:RemoteEvaluationAdapter
   registry:
     gcp: architecture_validator.adapters.gcp.a2a_registry:A2ARegistryAdapter
     local: architecture_validator.adapters.local.registry:LocalRegistryAdapter
+    live: architecture_validator.adapters.local.registry:LocalRegistryAdapter
     platform: architecture_validator.adapters.platform.remote_registry:RemoteRegistryAdapter
     onprem: architecture_validator.adapters.onprem.registry:OnPremRegistryAdapter
   tool_catalog:
     gcp: architecture_validator.adapters.gcp.mcp_tool_catalog:McpToolCatalogAdapter
     platform: architecture_validator.adapters.gcp.mcp_tool_catalog:McpToolCatalogAdapter
     local: architecture_validator.adapters.local.tool_catalog:LocalToolCatalogAdapter
+    live: architecture_validator.adapters.local.tool_catalog:LocalToolCatalogAdapter
     onprem: architecture_validator.adapters.onprem.tool_catalog:OnPremToolCatalogAdapter
   # Rule R8: a non-clean validation report (requires_human_review) is routed to the human-review-console
   # Human-Review & Maker-Checker Console via the shared review-kit, never left as a
@@ -199,4 +214,5 @@ adapters:
     gcp: architecture_validator.adapters.platform.review_router:PlatformReviewRouter
     platform: architecture_validator.adapters.platform.review_router:PlatformReviewRouter
     local: architecture_validator.adapters.local.review_router:LocalReviewRouter
+    live: architecture_validator.adapters.local.review_router:LocalReviewRouter
     onprem: architecture_validator.adapters.onprem.review_router:OnPremReviewRouter

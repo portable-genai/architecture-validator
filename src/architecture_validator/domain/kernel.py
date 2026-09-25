@@ -162,7 +162,9 @@ class LlmRequest:
 @dataclass(frozen=True, slots=True)
 class LlmResponse:
     text: str
-    usage: TokenUsage = field(default_factory=TokenUsage)
+    #: ``None`` when the model reported no usage (a local server often reports none); a
+    #: fabricated zero would read as a free call. The usage recorder skips ``None``.
+    usage: TokenUsage | None = field(default_factory=TokenUsage)
     model: str = ""
     raw: dict | None = None
 

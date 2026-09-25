@@ -9,8 +9,9 @@ persona) without standing up any identity provider. It is bound ONLY under the l
 profile; secure mode uses the IAP adapter, which verifies a real assertion.
 
 These personas are an UNAUTHENTICATED grant of the arch-approver entitlement, so this
-adapter refuses to construct unless the local profile was chosen deliberately: the profile
-must actually be ``local`` AND (when the settings came from the environment)
+adapter refuses to construct unless a laptop profile was chosen deliberately: the profile
+must actually be ``local`` or ``live`` (the same laptop posture with a local model
+answering) AND (when the settings came from the environment)
 ``ARCH_VALIDATOR_PROFILE`` must have been set rather than inherited from the fallback. A
 missing env var therefore fails closed instead of serving an intake gate with dev approvers.
 The refusal is pure stdlib and happens at construction, before any credential is inspected,
@@ -19,7 +20,7 @@ so it does not depend on a cloud SDK being installed.
 
 from __future__ import annotations
 
-from ...config import Settings
+from ...config import LAPTOP_PROFILES, Settings
 from ...domain.identity import IdentityError, Principal, RequestContext
 from ...ports.identity import CLIENT_ASSERTED
 
@@ -80,9 +81,9 @@ class LocalPersonaIdentityAdapter:
     end_user_auth = CLIENT_ASSERTED
 
     def __init__(self, settings: Settings) -> None:
-        if settings.profile != "local":
+        if settings.profile not in LAPTOP_PROFILES:
             raise LocalPersonaProfileError(
-                "seeded dev personas are local-profile only; "
+                "seeded dev personas are laptop-profile (local, live) only; "
                 f"refusing to serve them under profile {settings.profile!r}"
             )
         if not settings.profile_explicit:

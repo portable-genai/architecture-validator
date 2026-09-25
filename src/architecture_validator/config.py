@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from hex_service_kit.localmodel import LocalModelSettings
 from hex_service_kit.netdefaults import ConfiguredEmptyError, EnvSetting, read_env_setting
 
 from .envread import boolean_setting, optional_setting, setting_or_default
@@ -35,7 +36,13 @@ _PROFILE_ENV = "ARCH_VALIDATOR_PROFILE"
 #: ``Local`` would select none of the relaxations but also none of the restrictions.
 #: Normalising the case here would turn a typo into a silent choice; refusing it turns the
 #: typo into a construction failure.
-RUNTIME_PROFILES = frozenset({"local", "gcp", "platform", "onprem"})
+RUNTIME_PROFILES = frozenset({"local", "live", "gcp", "platform", "onprem"})
+
+#: The laptop profiles. ``live`` is ``local`` with one difference: the ``llm`` port answers from
+#: the shared local open-weight model (``hex_service_kit.localmodel``) instead of the
+#: deterministic stub. Every other binding and every laptop posture (seeded personas, loopback
+#: bind, dev CORS origins, in-process stores) is the same, so both names get it.
+LAPTOP_PROFILES: frozenset[str] = frozenset({"local", "live"})
 
 #: The profile string handed to every relaxation when ``ARCH_VALIDATOR_PROFILE`` was never
 #: set. It is deliberately NOT a member of :data:`RUNTIME_PROFILES` and never reaches
@@ -166,13 +173,22 @@ class ProfileChoice:
         return self.profile if self.explicit else UNCONSENTED_PROFILE
 
     @property
+    def laptop(self) -> bool:
+        """A DELIBERATELY chosen laptop profile (:data:`LAPTOP_PROFILES`), which earns the
+        laptop relaxations. An unconsented run is never one, whatever it binds."""
+        return self.explicit and self.profile in LAPTOP_PROFILES
+
+    @property
     def bind_profile(self) -> str:
         """The profile the bind guard keys off, where ``local`` is the RESTRICTIVE case.
 
         ``resolve_bind_host`` confines ``local`` to loopback and lets fronted profiles take
-        ``0.0.0.0``, so here an unconsented run must look like ``local`` and stay on loopback.
+        ``0.0.0.0``, so here an unconsented run must look like ``local`` and stay on loopback,
+        and so must ``live``, which serves the same seeded personas.
         """
-        return self.profile if self.explicit else "local"
+        if not self.explicit or self.profile in LAPTOP_PROFILES:
+            return "local"
+        return self.profile
 
 
 def _profile_setting(environ: Mapping[str, str] | None) -> EnvSetting:
@@ -390,7 +406,7 @@ class LocalSettings:
 class Settings:
     project_id: str = "your-gcp-project"
     region: str = "asia-southeast1"
-    profile: str = "local"  # local (default, SDK-free) | gcp | platform | onprem
+    profile: str = "local"  # local (default, SDK-free) | live | gcp | platform | onprem
     kms_key: str = ""  # projects/.../cryptoKeys/... (regional)
     models: ModelSettings = field(default_factory=ModelSettings)
     policy: PolicySettings = field(default_factory=PolicySettings)
@@ -420,6 +436,11 @@ class Settings:
     def exposure_profile(self) -> str:
         """The profile every relaxation keys off (see :meth:`ProfileChoice.exposure_profile`)."""
         return ProfileChoice(self.profile, self.profile_explicit).exposure_profile
+
+    @property
+    def laptop(self) -> bool:
+        """A deliberately chosen laptop profile (``local`` or ``live``)."""
+        return ProfileChoice(self.profile, self.profile_explicit).laptop
 
     @property
     def bind_profile(self) -> str:
@@ -519,6 +540,10 @@ class Settings:
             # generating, so naming a model would advertise one that never answers.
             if self.profile == "onprem":
                 return "onprem-not-implemented"
+            if self.profile == "live":
+                # The shared local open-weight model: the id the kit client sends, read from
+                # the same three-state LOCAL_MODEL setting the adapter reads.
+                return LocalModelSettings.from_env().model
             return "deterministic-offline-stub"
         # Managed. The id lives in settings in most of the fleet and on the adapter in a few,
         # so both are read here and the banner never names a model the binding does not use.

@@ -27,7 +27,7 @@ installed** (the on-prem / test profile).
 
 - **Catalog identity:** `architecture-validator` · group `rsk` · priority P2 · buyer Architecture Review Board / Risk (also owns the residency / IaC scanner)
 - **Package:** `architecture_validator` · **CLI:** `architecture-validator` (`validate`, `scan`, `policy`, `principles`, ...) · the `residency-validator scan` console script is the CI-gate entry point · **Service port:** 8088
-- **Profile env var:** `ARCH_VALIDATOR_PROFILE` (`gcp` | `local` | `platform` | `onprem`; dev/tests/CI use `local`). `RESIDENCY_VALIDATOR_*` variables are not read.
+- **Profile env var:** `ARCH_VALIDATOR_PROFILE` (`gcp` | `local` | `live` | `platform` | `onprem`; dev/tests/CI use `local`). `RESIDENCY_VALIDATOR_*` variables are not read.
 
 ## What it produces (cited artifacts)
 
@@ -76,7 +76,7 @@ flowchart LR
 ```
 
 The domain depends only on **ports** (`@runtime_checkable` Protocols). Adapters come in
-four families behind each port:
+five families behind each port:
 
 - **`gcp/`**: managed-service adapters (OPA REST, File Search, Gemini, Cloud Logging,
   Cloud Trace, Gen AI eval, A2A registry, MCP catalog). All `google-*` imports are lazy.
@@ -85,6 +85,12 @@ four families behind each port:
   append-only SQLite audit, no-op tracer, and in-process the cloud control-mapping toolkit/the data-residency validator/registry/catalog. Runs the
   whole pipeline with **no Google Cloud, no API key and no emulators by default**; imports
   no `google-cloud` package on the default path.
+- **`live/`**: the `live` laptop profile binds every port to its `local` adapter except `llm`,
+  which answers from the shared local open-weight model through the
+  `hex_service_kit.localmodel` client (`LOCAL_MODEL_URL`, `LOCAL_MODEL`; default Gemma 4 31B
+  on `http://127.0.0.1:8001`). Start the server with
+  `python -m mlx_vlm.server --model mlx-community/gemma-4-31b-it-8bit --port 8001`, then
+  `make run-api PROFILE=live`. Tests, CI and `make demo` stay on `local`.
 - **`platform/`**: thin `httpx` clients to sibling services (`compliance-advisory` `/ask` and, from `compliance-advisory`'s
   control-mapping module, `/evidence-pack`; the data-residency validator `/scan`, `agent-registry`, `agent-observability`).
 - **`onprem/`**: fail-fast placeholder migration targets: construct cleanly with a single
