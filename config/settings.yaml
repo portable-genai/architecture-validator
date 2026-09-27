@@ -181,8 +181,8 @@ adapters:
     platform: architecture_validator.adapters.platform.remote_audit:RemoteAuditAdapter
     onprem: architecture_validator.adapters.onprem.audit:OnPremAuditAdapter
   tracer:
-    gcp: architecture_validator.adapters.gcp.cloud_trace_tracer:CloudTraceTracerAdapter
-    platform: architecture_validator.adapters.gcp.cloud_trace_tracer:CloudTraceTracerAdapter
+    gcp: architecture_validator.adapters.gcp.tracer:CloudTracerAdapter
+    platform: architecture_validator.adapters.gcp.tracer:CloudTracerAdapter
     local: architecture_validator.adapters.local.tracer:LocalNoopTracerAdapter
     live: architecture_validator.adapters.local.tracer:LocalNoopTracerAdapter
     onprem: architecture_validator.adapters.onprem.tracer:OnPremTracerAdapter
