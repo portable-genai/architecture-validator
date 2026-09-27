@@ -82,8 +82,8 @@ OPA or the eval service, so those stay on the SDK-free workaround.
 - Policy engine: **OPA** on Cloud Run evaluating the bundled rego (`src/architecture_validator/policies`).
   The OPA call uses `httpx` (a core dep); the rego bundle ships as data files.
 - Grounding: **File Search** (`enterprise-knowledge-base`); reg-KB requirement text in practice via `compliance-advisory` `/ask`.
-- Audit: Cloud Logging locked WORM bucket, retention 2557 days. Tracing: Cloud Trace via
-  OpenTelemetry, message-content capture OFF. Eval: Gen AI evaluation service.
+- Audit: Cloud Logging locked WORM bucket, retention 2557 days. Tracing: OpenTelemetry OTLP through
+  the agent-observability collector into Cloud Trace, message-content capture OFF. Eval: Gen AI evaluation service.
 - `[gcp]` extra holds all google-cloud-* / google-adk / google-genai; core deps are
   framework-light (pydantic, pyyaml, httpx, tenacity, typer, fastapi, uvicorn, python-dateutil).
 
